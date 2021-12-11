@@ -17,3 +17,6 @@
 **/*.csr
 **/*.key
 **/*.srl
+
+.kcp
+**/kcp.log

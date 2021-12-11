@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# initial PoC based on OCM
+
+create() {
+cat <<EOF | kubectl apply -f -
+apiVersion: work.open-cluster-management.io/v1
+kind: ManifestWork
+metadata:
+  name: hello-world
+  namespace: cluster1
+  labels:
+    app: hello
+spec:
+  workload:
+    manifests:
+EOF
+}
