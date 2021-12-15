@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ip-172-31-37-22
+spec:
+  type: NodePort
+  selector:
+    app: kube-apiserver
+  ports:
+  - port: 7443
+    nodePort: 30443
+    name: https
+    protocol: TCP
