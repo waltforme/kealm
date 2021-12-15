@@ -20,3 +20,5 @@
 
 .kcp
 **/kcp.log
+*.code-workspace
+**/admin.conf
