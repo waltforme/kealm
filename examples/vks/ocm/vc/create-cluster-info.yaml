@@ -1,0 +1,14 @@
+#/bin/bash
+
+echo "using server $SERVER"
+
+CERTS_PATH=/etc/kubernetes/pki
+
+kubectl config set-cluster bootstrap \
+  --kubeconfig=bootstrap-kubeconfig-public  \
+  --server=$SERVER \
+  --certificate-authority=${CERTS_PATH}/ca.crt \
+  --embed-certs=true
+
+kubectl -n kube-public create configmap cluster-info \
+  --from-file=kubeconfig=bootstrap-kubeconfig-public  

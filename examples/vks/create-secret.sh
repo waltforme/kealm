@@ -3,6 +3,7 @@
 CERTS_PATH=/etc/kubernetes/pki
 KC_PATH=/etc/kubernetes
 
+kubectl delete secret k8s-certs
 kubectl create secret generic k8s-certs \
   --from-file=${CERTS_PATH}/ca.crt \
   --from-file=${CERTS_PATH}/ca.key \
@@ -16,11 +17,12 @@ kubectl create secret generic k8s-certs \
   --from-file=${CERTS_PATH}/apiserver.crt \
   --from-file=${CERTS_PATH}/apiserver.key
 
-kubectl create secret generic cm-kubeconfig \
-     --from-file=${KC_PATH}/controller-manager.conf
-
-# TMP_DIR=$(mktemp -d -t cmkc-XXXXXXXXXX)
-# sed "s\API_SERVER_URL\https://ip-172-31-37-22:7443\g" ${KC_PATH}/controller-manager.conf > ${TMP_DIR}/controller-manager.conf
 # kubectl create secret generic cm-kubeconfig \
-#     --from-file=${TMP_DIR}/controller-manager.conf
-# rm -rf ${TMP_DIR}   
+#      --from-file=${KC_PATH}/controller-manager.conf
+
+kubectl delete secret cm-kubeconfig 
+TMP_DIR=$(mktemp -d -t cmkc-XXXXXXXXXX)
+sed "s\API_SERVER_URL\https://ip-172-31-37-22:7443\g" ${KC_PATH}/controller-manager.conf > ${TMP_DIR}/controller-manager.conf
+kubectl create secret generic cm-kubeconfig \
+    --from-file=${TMP_DIR}/controller-manager.conf
+rm -rf ${TMP_DIR}   

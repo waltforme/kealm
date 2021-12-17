@@ -1,0 +1,55 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cluster-manager-registration-controller
+  labels:
+    app: clustermanager-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clustermanager-registration-controller
+  template:
+    metadata:
+      labels:
+        app: clustermanager-registration-controller
+    spec:
+      #serviceAccountName: cluster-manager-registration-controller-sa
+      containers:
+      - name: hub-registration-controller
+        image: quay.io/open-cluster-management/registration
+        args:
+          - "/registration"
+          - "controller"
+          - --kubeconfig=/etc/kubernetes/controller-manager.conf
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTPS
+            port: 8443
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTPS
+            port: 8443
+          initialDelaySeconds: 2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /etc/kubernetes/
+          name: cm-kubeconfig    
+      volumes:
+      - name: cm-kubeconfig
+        secret: 
+          secretName: cm-kubeconfig            

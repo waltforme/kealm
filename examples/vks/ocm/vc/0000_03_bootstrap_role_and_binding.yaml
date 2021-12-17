@@ -1,0 +1,85 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+  namespace: kube-public
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+  namespace: kube-public
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+subjects:
+- kind: ServiceAccount
+  name: cluster-bootstrap
+  namespace: open-cluster-management
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+rules:
+- apiGroups:
+  - "certificates.k8s.io"
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - list
+  - get
+  - create
+  - watch
+- apiGroups:
+  - "cluster.open-cluster-management.io"
+  resources:
+  - managedclusters
+  verbs:
+  - get  
+  - create
+  - list
+- apiGroups:
+  - "addon.open-cluster-management.io"
+  resources:
+  - managedclusteraddons
+  verbs:
+  - list  
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:serviceaccount:open-cluster-management:cluster-bootstrap
+subjects:
+- kind: ServiceAccount
+  name: cluster-bootstrap
+  namespace: open-cluster-management
