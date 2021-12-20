@@ -84,8 +84,8 @@ get_db_password() {
 }
 
 create_certs_secret() {
-    kubectl delete secret k8s-certs &> /dev/null
-    kubectl create secret generic k8s-certs \
+    kubectl delete -n ${VKS_NS} secret k8s-certs &> /dev/null
+    kubectl create -n ${VKS_NS} secret generic k8s-certs \
     --from-file=${VKS_HOME}/pki/ca.crt \
     --from-file=${VKS_HOME}/pki/ca.key \
     --from-file=${VKS_HOME}/pki/apiserver-kubelet-client.crt \
@@ -105,6 +105,7 @@ configure_manifests() {
     cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver.yaml | \
         sed "s/{{ .DBPassword }}/${DB_PASSWORD}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
+         sed "s/{{ .vksNS }}/${VKS_NS}/g" | \
         sed "s/{{ .DBReleaseName }}/${DB_RELEASE_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver.yaml
 
     cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver-service.yaml | \

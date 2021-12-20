@@ -22,4 +22,4 @@
 **/kcp.log
 *.code-workspace
 **/admin.conf
-./vks
+.vks
