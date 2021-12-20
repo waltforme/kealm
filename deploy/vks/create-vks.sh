@@ -35,10 +35,13 @@ create_kind_cluster() {
 }
 
 check_node_ready() {
+    echo "checking VKS Host node is up..."
     for (( ; ; ))
     do
+        echo -n "."
         JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'  && kubectl get nodes -o jsonpath="$JSONPATH" | grep "Ready=True" > /dev/null
         if [ "$?" -eq 0 ]; then
+            echo ""
             echo "Node ready!"
             break
         fi
@@ -51,8 +54,12 @@ get_kind_cluster_ip() {
 }
 
 create_certs() {
+    IP=$1
     mkdir -p ${VKS_HOME}/pki
-    kubeadm init phase certs --cert-dir=${VKS_HOME}/pki all
+    rm ${VKS_HOME}/*.conf &>/dev/null
+    kubeadm init phase certs --cert-dir=${VKS_HOME}/pki \
+    --control-plane-endpoint=$1 \
+    --apiserver-cert-extra-sans=${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} admin
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} controller-manager
 }
@@ -83,7 +90,7 @@ get_db_password() {
     echo ${DB_PASSWORD}   
 }
 
-create_certs_secret() {
+create_or_update_certs_secret() {
     kubectl delete -n ${VKS_NS} secret k8s-certs &> /dev/null
     kubectl create -n ${VKS_NS} secret generic k8s-certs \
     --from-file=${VKS_HOME}/pki/ca.crt \
@@ -105,18 +112,81 @@ configure_manifests() {
     cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver.yaml | \
         sed "s/{{ .DBPassword }}/${DB_PASSWORD}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
-         sed "s/{{ .vksNS }}/${VKS_NS}/g" | \
+        sed "s/{{ .vksNS }}/${VKS_NS}/g" | \
         sed "s/{{ .DBReleaseName }}/${DB_RELEASE_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver.yaml
 
     cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver-service.yaml | \
         sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
-        sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml  
+        sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml
+
+    cat ${PROJECT_HOME}/deploy/vks/manifests/kube-controller-manager.yaml | \
+        sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
+        sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" > ${VKS_HOME}/manifests/kube-controller-manager.yaml
 }
 
 apply_manifests() {
     kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-apiserver.yaml
     kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-apiserver-service.yaml
+}
+
+update_kubeconfig() {
+    IP=$1
+    CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
+    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf -i""
+}
+
+check_vks_up() {
+    echo "checking ${VKS_NAME} is up..."
+    echo "press CTRL+C to exit"
+    for (( ; ; ))
+    do
+        echo -n "."
+        kubectl --kubeconfig=${VKS_HOME}/admin.conf cluster-info &> /dev/null
+        if [ "$?" -eq 0 ]; then
+            echo ""
+            echo "${VKS_NAME} ready!"
+            kubectl --kubeconfig=${VKS_HOME}/admin.conf cluster-info
+            break
+        fi
+        sleep 2
+    done
+}
+
+upload_kubeadm_config() {
+    kubeadm --kubeconfig=${VKS_HOME}/admin.conf init phase upload-config kubeadm
+    kubectl --kubeconfig=${VKS_HOME}/admin.conf -n kube-system get configmap kubeadm-config \
+        -o jsonpath='{.data.ClusterConfiguration}' > ${VKS_HOME}/kubeadm.yaml
+}
+
+update_sans() {
+    IP=$1
+    python3 -c \
+    "import yaml;f=open(\"${VKS_HOME}/kubeadm.yaml\",'r');y=yaml.safe_load(f);\
+    y['apiServer']['certSANs']=[\"${IP}\",\"${VKS_NAME}\",\"${VKS_NAME}.${VKS_NS}\",\"${VKS_NAME}.${VKS_NS}.svc\",\"${VKS_NAME}.${VKS_NS}.svc.cluster.local\"];\
+    y['certificatesDir']=\"${VKS_HOME}/pki\";\
+    f.close();f=open(\"${VKS_HOME}/kubeadm.yaml\",'w');yaml.dump(y, f, default_flow_style=False, sort_keys=False)" 
+
+    mkdir -p ${VKS_HOME}/pki/backups
+    mv ${VKS_HOME}/pki/apiserver.{crt,key} ${VKS_HOME}/pki/backups
+    kubeadm init phase certs apiserver --config ${VKS_HOME}/kubeadm.yaml
+}
+
+restart_api_server() {
+    kubectl scale deploy -n ${VKS_NS} --replicas=0 kube-apiserver
+    kubectl scale deploy -n ${VKS_NS} --replicas=1 kube-apiserver
+}
+
+create_cm_secret() {
+    CURRENT_SERVER=$(cat ${VKS_HOME}/controller-manager.conf | grep server: | awk '{print $2}')
+    sed "s|${CURRENT_SERVER}|https://${VKS_NAME}:${API_SERVER_PORT}|g" ${VKS_HOME}/controller-manager.conf -i""  
+    kubectl -n ${VKS_NS} delete secret cm-kubeconfig &>/dev/null
+    kubectl -n ${VKS_NS} create secret generic cm-kubeconfig \
+        --from-file=${VKS_HOME}/controller-manager.conf 
+}
+
+apply_cm_manifests() {
+    kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-controller-manager.yaml
 }
 
 ###########################################################################################
@@ -131,7 +201,7 @@ if [ "$USE_KIND" == "true" ]; then
     CLUSTER_IP=$(get_kind_cluster_ip)
 fi    
 
-create_certs
+create_certs $CLUSTER_IP
 
 create_vks_ns
 
@@ -139,9 +209,18 @@ install_db
 
 DB_PASSWORD=$(get_db_password)
 
-create_certs_secret
+create_or_update_certs_secret
 
 configure_manifests ${DB_PASSWORD}
 
 apply_manifests
 
+update_kubeconfig $CLUSTER_IP
+
+check_vks_up
+
+upload_kubeadm_config
+
+create_cm_secret
+
+apply_cm_manifests
