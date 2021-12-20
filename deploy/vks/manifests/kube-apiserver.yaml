@@ -21,7 +21,7 @@ spec:
         command:
           - kine
           - --endpoint
-          - postgres://postgres:POSTGRES_PASSWORD@mypsql-postgresql.default.svc.cluster.local/postgres?sslmode=disable
+          - postgres://postgres:{{ .DBPassword }}@{{ .DBReleaseName }}-postgresql.default.svc.cluster.local/postgres?sslmode=disable
         ports:
         - containerPort: 2379
       - name: kube-apiserver
@@ -45,7 +45,7 @@ spec:
         - --requestheader-extra-headers-prefix=X-Remote-Extra-
         - --requestheader-group-headers=X-Remote-Group
         - --requestheader-username-headers=X-Remote-User
-        - --secure-port=7443
+        - --secure-port={{ .securePort }}
         - --service-account-issuer=https://kubernetes.default.svc.cluster.local
         - --service-account-key-file=/etc/kubernetes/pki/sa.pub
         - --service-account-signing-key-file=/etc/kubernetes/pki/sa.key

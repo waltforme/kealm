@@ -21,6 +21,17 @@ export POSTGRES_PASSWORD=$(kubectl get secret --namespace default mypsql-postgre
 
 Create secret with certs (TBD - check if kubeadm could be used to create them)
 
+kubeadm can create certs and kubeconfigs as follows
+
+```
+KUBEADM_DIR=~/kubernetes/vc1
+PKI_DIR=$KUBEADM_DIR/pki
+mkdir -p $PKI_DIR
+kubeadm init phase certs --cert-dir=$PKI_DIR all
+kubeadm init phase kubeconfig --cert-dir=$PKI_DIR --kubeconfig-dir=$KUBEADM_DIR all
+```
+
+
 ```shell
 ./create-secret.sh
 ```
