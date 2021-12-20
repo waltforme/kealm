@@ -14,7 +14,6 @@ spec:
       labels:
         app: clustermanager-registration-controller
     spec:
-      #serviceAccountName: cluster-manager-registration-controller-sa
       containers:
       - name: hub-registration-controller
         image: quay.io/open-cluster-management/registration

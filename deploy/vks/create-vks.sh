@@ -2,15 +2,7 @@
 
 PROJECT_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 
-USE_KIND="${USE_KIND:-true}"
-
-VKS_NAME=vks
-VKS_HOME=${PROJECT_HOME}/.${VKS_NAME}
-DB_RELEASE_NAME=mypsql
-VKS_NS=${VKS_NAME}-system
-KIND_CLUSTER_NAME=vkshost
-KIND_CLUSTER_NODEPORT=31433
-API_SERVER_PORT=7443
+source ${PROJECT_HOME}/deploy/vks/config.sh
 
 ###############################################################################################
 #               Functions
@@ -189,6 +181,53 @@ apply_cm_manifests() {
     kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-controller-manager.yaml
 }
 
+create_bootstrap_token() {
+kubectl get secrets --kubeconfig=${VKS_HOME}/admin.conf -n kube-system | grep bootstrap-token &>/dev/null
+if [ "$?" -eq 0 ]; then
+    echo "Bootstrap token found, skipping generation"
+    return
+fi
+echo "Generating new boostrap token"
+TOKEN_ID=$(openssl rand -hex 3)
+TOKEN_SECRET=$(openssl rand -hex 8)
+TOKEN=$TOKEN_ID.$TOKEN_SECRET
+
+cat <<EOF | kubectl apply --kubeconfig=${VKS_HOME}/admin.conf -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bootstrap-token-$TOKEN_ID
+  namespace: kube-system
+type: bootstrap.kubernetes.io/token
+stringData:
+  description: "The default bootstrap token."
+  token-id: $TOKEN_ID
+  token-secret: $TOKEN_SECRET
+  expiration: 2022-12-05T12:00:00Z
+  usage-bootstrap-authentication: "true"
+  usage-bootstrap-signing: "true"
+  auth-extra-groups: system:bootstrappers:worker,system:bootstrappers:ingress
+EOF
+}
+
+generate_cluster_info() {
+  kubectl -n kube-public --kubeconfig=${VKS_HOME}/admin.conf get configmap cluster-info &>/dev/null
+  if [ "$?" -eq 0 ]; then
+    echo "Cluster info found, skipping generation"
+    return
+  fi
+  echo "Generating new cluster info"
+  IP=$1
+  kubectl config set-cluster bootstrap \
+  --kubeconfig=${VKS_HOME}/bootstrap-kubeconfig-public  \
+  --server=https://${IP}:${KIND_CLUSTER_NODEPORT}\
+  --certificate-authority=${VKS_HOME}/pki/ca.crt \
+  --embed-certs=true
+
+  kubectl -n kube-public --kubeconfig=${VKS_HOME}/admin.conf create configmap cluster-info \
+  --from-file=kubeconfig=${VKS_HOME}/bootstrap-kubeconfig-public  
+}
+
 ###########################################################################################
 #                   Main   
 ###########################################################################################
@@ -224,3 +263,7 @@ upload_kubeadm_config
 create_cm_secret
 
 apply_cm_manifests
+
+create_bootstrap_token
+
+generate_cluster_info $CLUSTER_IP
