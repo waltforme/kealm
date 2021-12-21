@@ -1,28 +1,27 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: cluster-manager-registration-controller
+  name: cluster-manager-placement-controller
   labels:
     app: clustermanager-controller
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: clustermanager-registration-controller
+      app: clustermanager-placement-controller
   template:
     metadata:
       labels:
-        app: clustermanager-registration-controller
+        app: clustermanager-placement-controller
     spec:
       containers:
-      - name: hub-registration-controller
-        image: quay.io/open-cluster-management/registration
+      - name: placement-controller
+        image: quay.io/open-cluster-management/placement
         imagePullPolicy: Always
         args:
-          - "/registration"
+          - "/placement"
           - "controller"
           - --kubeconfig=/etc/kubernetes/controller-manager.conf
-          - -v8
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -53,4 +52,4 @@ spec:
       volumes:
       - name: cm-kubeconfig
         secret: 
-          secretName: cm-kubeconfig            
+          secretName: cm-kubeconfig  
