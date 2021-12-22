@@ -169,6 +169,14 @@ rules:
   verbs:
   - get
   - create
+- apiGroups:
+  - "cluster.open-cluster-management.io"
+  resources:
+  - managedclusterset
+  - managedclustersets/status
+  verbs:
+  - get
+  - update
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
