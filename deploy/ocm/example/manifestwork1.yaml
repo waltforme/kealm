@@ -1,7 +1,7 @@
 apiVersion: work.open-cluster-management.io/v1
 kind: ManifestWork
 metadata:
-  namespace: cluster1
+  namespace: podman2
   name: example-manifestwork
 spec:
   workload:

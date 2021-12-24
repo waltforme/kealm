@@ -31,6 +31,8 @@ get_bootstrap_token() {
 #                   Main   
 ###########################################################################################
 
+unset KUBECONFIG
+
 deploy_vks_manifests
 
 deploy_cluster_manager
