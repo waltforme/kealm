@@ -232,6 +232,8 @@ generate_cluster_info() {
 #                   Main   
 ###########################################################################################
 
+unset KUBECONFIG
+
 if [ "$USE_KIND" == "true" ]; then 
     kind_cluster_exists=$(check_kind_cluster_exists)
     if [ "$kind_cluster_exists" == "false" ]; then
