@@ -44,7 +44,14 @@ fi
 
 token=$(get_bootstrap_token)
 
+if [ ! -z "$1" ]; then
+    echo "External IP $1 has been provided, using for join command generation"
+    hubApiserver=https://$1:${KIND_CLUSTER_NODEPORT}
+else
+    hubApiserver=${server}
+fi
+
 echo ""
 echo "cluster manager has been started! To join clusters run the command (make sure to use the correct <cluster-name>:"
 echo ""
-echo "clusteradm join --hub-token $token --hub-apiserver $server --cluster-name <cluster-name>"
+echo "clusteradm join --hub-token ${token} --hub-apiserver ${hubApiserver} --cluster-name <cluster-name>"

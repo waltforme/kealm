@@ -47,11 +47,16 @@ get_kind_cluster_ip() {
 
 create_certs() {
     IP=$1
+    if [ -z "$2" ]; then
+        EXTERNAL_IP=""
+    else    
+        EXTERNAL_IP=${2},
+    fi    
     mkdir -p ${VKS_HOME}/pki
     rm ${VKS_HOME}/*.conf &>/dev/null
     kubeadm init phase certs --cert-dir=${VKS_HOME}/pki \
     --control-plane-endpoint=$1 \
-    --apiserver-cert-extra-sans=${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all
+    --apiserver-cert-extra-sans=${EXTERNAL_IP}${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} admin
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} controller-manager
 }
@@ -234,6 +239,12 @@ generate_cluster_info() {
 
 unset KUBECONFIG
 
+if [ ! -z "$1" ]; then
+    echo "External IP $1 has been provided, setting in SANs"
+    externalIP=$1
+fi
+
+
 if [ "$USE_KIND" == "true" ]; then 
     kind_cluster_exists=$(check_kind_cluster_exists)
     if [ "$kind_cluster_exists" == "false" ]; then
@@ -242,7 +253,7 @@ if [ "$USE_KIND" == "true" ]; then
     CLUSTER_IP=$(get_kind_cluster_ip)
 fi    
 
-create_certs $CLUSTER_IP
+create_certs $CLUSTER_IP $externalIP
 
 create_vks_ns
 

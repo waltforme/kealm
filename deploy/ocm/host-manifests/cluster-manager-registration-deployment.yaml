@@ -22,7 +22,6 @@ spec:
           - "/registration"
           - "controller"
           - --kubeconfig=/etc/kubernetes/controller-manager.conf
-          - -v8
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
