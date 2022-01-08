@@ -1,0 +1,20 @@
+# permissions for end users to view appbundles.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: appbundle-viewer-role
+rules:
+- apiGroups:
+  - app.open-cluster-management.io
+  resources:
+  - appbundles
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - app.open-cluster-management.io
+  resources:
+  - appbundles/status
+  verbs:
+  - get

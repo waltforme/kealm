@@ -1,0 +1,24 @@
+# permissions for end users to edit appbundles.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: appbundle-editor-role
+rules:
+- apiGroups:
+  - app.open-cluster-management.io
+  resources:
+  - appbundles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - app.open-cluster-management.io
+  resources:
+  - appbundles/status
+  verbs:
+  - get

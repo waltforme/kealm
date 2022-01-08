@@ -1,0 +1,6 @@
+apiVersion: app.open-cluster-management.io/v1alpha1
+kind: AppBundle
+metadata:
+  name: appbundle-sample
+spec:
+  # TODO(user): Add fields here

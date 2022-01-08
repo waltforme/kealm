@@ -24,4 +24,6 @@
 **/admin.conf
 .vks
 
+bin
+
 *.code-workspace

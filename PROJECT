@@ -1,0 +1,16 @@
+domain: open-cluster-management.io
+layout:
+- go.kubebuilder.io/v3
+projectName: kealm
+repo: github.com/pdettori/kealm
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: open-cluster-management.io
+  group: app
+  kind: AppBundle
+  path: github.com/pdettori/kealm/api/v1alpha1
+  version: v1alpha1
+version: "3"
