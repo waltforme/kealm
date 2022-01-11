@@ -1,0 +1,56 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: cluster-manager-extensions
+  labels:
+    app: cluster-manager-extensions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-manager-extensions
+  template:
+    metadata:
+      labels:
+        app: cluster-manager-extensions
+    spec:
+      containers:
+      - name: cluster-manager-extensions
+        image: quay.io/pdettori/kealm
+        imagePullPolicy: Always
+        args:
+          - "/manager"
+        env:
+        - name: KUBECONFIG
+          value: /etc/kubernetes/controller-manager.conf  
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          runAsNonRoot: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTP
+            port: 8081
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            scheme: HTTP
+            port: 8081
+          initialDelaySeconds: 2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /etc/kubernetes/
+          name: cm-kubeconfig    
+      volumes:
+      - name: cm-kubeconfig
+        secret: 
+          secretName: cm-kubeconfig            

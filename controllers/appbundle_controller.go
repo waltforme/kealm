@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	appv1alpha1 "github.com/pdettori/kealm/api/v1alpha1"
@@ -51,6 +53,9 @@ type AppBundleReconciler struct {
 const (
 	// PlacementLabel is the label to attach a placement to AppBundle
 	PlacementLabel = "cluster.open-cluster-management.io/placement"
+
+	// OwnedLabel is the label to attach to owned manifest works
+	OwnedLabel = "cluster.open-cluster-management.io/owned-by"
 )
 
 //+kubebuilder:rbac:groups=app.open-cluster-management.io,resources=appbundles,verbs=get;list;watch;create;update;patch;delete
@@ -71,8 +76,39 @@ func (r *AppBundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	var bundle appv1alpha1.AppBundle
 	if err := r.Get(ctx, req.NamespacedName, &bundle); err != nil {
-		klog.Error(err, "unable to fetch AppBundle")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	b := bundle.DeepCopy()
+	// examine DeletionTimestamp to determine if object is under deletion
+	if bundle.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !containsString(b.GetFinalizers(), DeployFinalizer) {
+			controllerutil.AddFinalizer(b, DeployFinalizer)
+			err := r.Update(ctx, b, &client.UpdateOptions{})
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		// The object is being deleted
+		if containsString(b.GetFinalizers(), DeployFinalizer) {
+			// our finalizer is present, so lets handle any external dependency
+			if err := r.deleteAllChildManifests(b); err != nil {
+				return ctrl.Result{}, err
+			}
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(b, DeployFinalizer)
+
+			if err := r.Update(ctx, b, &client.UpdateOptions{}); err != nil {
+				return ctrl.Result{}, IgnoreConflict(err)
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
 	}
 
 	var pLabel *string
@@ -91,9 +127,13 @@ func (r *AppBundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	err = r.scheduleBundle(bundle, placementDec)
-	if err != nil {
-		return ctrl.Result{}, err
+
+	// schedule only non-empty bundles
+	if len(bundle.Spec.Workload.Manifests) > 0 {
+		err = r.scheduleBundle(bundle, placementDec)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -136,8 +176,20 @@ func (r *AppBundleReconciler) scheduleBundle(bundle appv1alpha1.AppBundle, decis
 
 		klog.Infof("Applying manifest for cluster %s", dec.ClusterName)
 
-		_, err := r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Create(context.TODO(), manifest, v1.CreateOptions{})
+		existingManifest, err := r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Get(context.TODO(), manifest.Name, v1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				_, err = r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Create(context.TODO(), manifest, v1.CreateOptions{})
+			}
+			return err
+		}
 
+		// TODO - should compare specs, labels & annotations to check if uodate is really needed
+		newManifest := existingManifest.DeepCopy()
+		newManifest.Spec = manifest.Spec
+		newManifest.Labels = manifest.Labels
+		newManifest.Annotations = manifest.Annotations
+		_, err = r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Update(context.TODO(), newManifest, v1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -160,5 +212,23 @@ func generateManifest(bundle appv1alpha1.AppBundle, namespace string) *workapiv1
 		Spec: bundle.Spec,
 	}
 	manifest.Namespace = namespace
+	manifest.Labels[OwnedLabel] = string(bundle.UID)
 	return manifest
+}
+
+func (r *AppBundleReconciler) deleteAllChildManifests(bundle *appv1alpha1.AppBundle) error {
+	req, _ := labels.NewRequirement(OwnedLabel, selection.Equals, []string{string(bundle.UID)})
+	selector := labels.NewSelector()
+	selector = selector.Add(*req)
+	mList := &workapiv1.ManifestWorkList{}
+	mList, err := r.WorkClient.WorkV1().ManifestWorks("").List(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, m := range mList.Items {
+		if err := r.WorkClient.WorkV1().ManifestWorks(m.Namespace).Delete(context.TODO(), m.Name, v1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
