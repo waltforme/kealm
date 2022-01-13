@@ -56,9 +56,9 @@ create_certs() {
     rm ${VKS_HOME}/*.conf &>/dev/null
     kubeadm init phase certs --cert-dir=${VKS_HOME}/pki \
     --control-plane-endpoint=$1 \
-    --apiserver-cert-extra-sans=${EXTERNAL_IP}${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all
-    kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} admin
-    kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} controller-manager
+    --apiserver-cert-extra-sans=${EXTERNAL_IP}${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all 2>/dev/null
+    kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} admin 2>/dev/null
+    kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} controller-manager 2>/dev/null
 }
 
 create_vks_ns() {
@@ -130,7 +130,8 @@ apply_manifests() {
 update_kubeconfig() {
     IP=$1
     CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
-    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf -i""
+    sed -i.bak "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf
+    rm ${VKS_HOME}/admin.conf.bak
 }
 
 check_vks_up() {
@@ -151,7 +152,7 @@ check_vks_up() {
 }
 
 upload_kubeadm_config() {
-    kubeadm --kubeconfig=${VKS_HOME}/admin.conf init phase upload-config kubeadm
+    kubeadm --kubeconfig=${VKS_HOME}/admin.conf init phase upload-config kubeadm 2>/dev/null
     kubectl --kubeconfig=${VKS_HOME}/admin.conf -n kube-system get configmap kubeadm-config \
         -o jsonpath='{.data.ClusterConfiguration}' > ${VKS_HOME}/kubeadm.yaml
 }
@@ -166,7 +167,7 @@ update_sans() {
 
     mkdir -p ${VKS_HOME}/pki/backups
     mv ${VKS_HOME}/pki/apiserver.{crt,key} ${VKS_HOME}/pki/backups
-    kubeadm init phase certs apiserver --config ${VKS_HOME}/kubeadm.yaml
+    kubeadm init phase certs apiserver --config ${VKS_HOME}/kubeadm.yaml 2>/dev/null
 }
 
 restart_api_server() {
@@ -176,7 +177,8 @@ restart_api_server() {
 
 create_cm_secret() {
     CURRENT_SERVER=$(cat ${VKS_HOME}/controller-manager.conf | grep server: | awk '{print $2}')
-    sed "s|${CURRENT_SERVER}|https://${VKS_NAME}:${API_SERVER_PORT}|g" ${VKS_HOME}/controller-manager.conf -i""  
+    sed -i.bak "s|${CURRENT_SERVER}|https://${VKS_NAME}:${API_SERVER_PORT}|g" ${VKS_HOME}/controller-manager.conf 
+    rm ${VKS_HOME}/controller-manager.conf.bak 
     kubectl -n ${VKS_NS} delete secret cm-kubeconfig &>/dev/null
     kubectl -n ${VKS_NS} create secret generic cm-kubeconfig \
         --from-file=${VKS_HOME}/controller-manager.conf 
@@ -250,7 +252,11 @@ if [ "$USE_KIND" == "true" ]; then
     if [ "$kind_cluster_exists" == "false" ]; then
         create_kind_cluster
     fi
-    CLUSTER_IP=$(get_kind_cluster_ip)
+    case "$OSTYPE" in
+        darwin*)  CLUSTER_IP=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -n 1 ) ;; 
+        linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
+        *)        echo "unknown: $OSTYPE" ;;
+    esac
 fi    
 
 create_certs $CLUSTER_IP $externalIP
