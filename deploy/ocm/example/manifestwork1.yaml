@@ -1,7 +1,7 @@
 apiVersion: work.open-cluster-management.io/v1
 kind: ManifestWork
 metadata:
-  name: example-manifestwork
+  name: manifestwork1
 spec:
   workload:
     manifests:
@@ -14,18 +14,18 @@ spec:
         kind: Deployment
         metadata:
           namespace: default
-          name: nginx-deployment
+          name: manifestwork1-nginx
           labels:
-            app: nginx
+            app: manifestwork1-nginx
         spec:
-          replicas: 3
+          replicas: 1
           selector:
             matchLabels:
-              app: nginx
+              app: manifestwork1-nginx
           template:
             metadata:
               labels:
-                app: nginx
+                app: manifestwork1-nginx
             spec:
               serviceAccountName: my-sa
               containers:
