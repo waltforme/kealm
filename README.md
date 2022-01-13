@@ -266,8 +266,44 @@ lately of great interest on the kubernetes community, see for example the
 deployment to the "virtual hub" - instead of creating pods on the virtual hub it will
 create pods on the managed clusters that the virtual cluster represents.
 
+This model will still use the `appbundle` resource to back the resources applied to the virtual cluster,
+so we will need to create an empty `appbundle` associated with a placement policy:
 
+```shell
+kubectl apply -f deploy/ocm/example/appbundle2-empty.yaml
+```
 
+We can then apply a deployment associated with this new bundle:
+
+```shell
+kubectl apply -f deploy/ocm/example/deployment1.yaml 
+```
+
+check that pods are NOT created on the virtual cluster:
+
+```shell
+kubectl get pods 
+
+No resources found in default namespace.
+```
+
+verify that `appbundle2` includes the new deployment:
+
+```shell
+kubectl describe appbundle appbundle2
+```
+
+Go to the termoinal where kubectl was set to point to the managed cluster and 
+check that the new deployment has been delivered to the managed cluster 
+
+```shell
+kubectl get pods
+
+NAME                                   READY   STATUS    RESTARTS   AGE
+appbundle1-nginx-54cc7fdb98-9qdnl      1/1     Running   0          59m
+appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
+manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
+```
 
 ## Installing kubadm:
 
