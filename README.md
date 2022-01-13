@@ -12,6 +12,7 @@ To run the virtual cluster creation script, you will need the following:
 - [clusteradm](https://github.com/open-cluster-management-io/clusteradm)
 - [kubeadm](#installing-kubeadm)
 - jq
+- go >= 1.16 (if installing on `macos`, for building `kubeadm` )
 
 
 ## Creating a virtual cluster
