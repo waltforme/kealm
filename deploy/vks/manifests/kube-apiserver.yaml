@@ -21,7 +21,7 @@ spec:
         command:
           - kine
           - --endpoint
-          - postgres://postgres:{{ .DBPassword }}@{{ .DBReleaseName }}-postgresql.{{ .vksNS }}.svc.cluster.local/postgres?sslmode=disable
+          - postgres://postgres:{{ .DBPassword }}@{{ .DBReleaseName }}-postgresql.{{ .vksNS }}.svc/postgres?sslmode=disable
         ports:
         - containerPort: 2379
       - name: kube-apiserver
