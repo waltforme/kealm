@@ -45,6 +45,33 @@ get_kind_cluster_ip() {
     docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${KIND_CLUSTER_NAME}-control-plane
 }
 
+dumpIpForInterface()
+{
+  IT=$(ifconfig "$1") 
+  if [[ "$IT" != *"status: active"* ]]; then
+    return
+  fi
+  if [[ "$IT" != *" broadcast "* ]]; then
+    return
+  fi
+  echo "$IT" | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}'
+}
+
+get_host_ip()
+{
+  DEFAULT_ROUTE=$(route -n get 0.0.0.0 2>/dev/null | awk '/interface: / {print $2}')
+  if [ -n "$DEFAULT_ROUTE" ]; then
+    dumpIpForInterface "$DEFAULT_ROUTE"
+  else
+    for i in $(ifconfig -s | awk '{print $1}' | awk '{if(NR>1)print}')
+    do 
+      if [[ $i != *"vboxnet"* ]]; then
+        dumpIpForInterface "$i"
+      fi
+    done
+  fi
+}
+
 create_certs() {
     IP=$1
     if [ -z "$2" ]; then
@@ -253,7 +280,7 @@ if [ "$USE_KIND" == "true" ]; then
         create_kind_cluster
     fi
     case "$OSTYPE" in
-        darwin*)  CLUSTER_IP=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -n 1 ) ;; 
+        darwin*)  CLUSTER_IP=$(get_host_ip) ;; 
         linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
         *)        echo "unknown: $OSTYPE" ;;
     esac
