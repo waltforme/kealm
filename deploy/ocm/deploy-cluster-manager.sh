@@ -37,23 +37,22 @@ deploy_vks_manifests
 
 deploy_cluster_manager
 
-if [ "$USE_KIND" == "true" ]; then 
-    case "$OSTYPE" in
-        darwin*)  CLUSTER_IP=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -n 1 ) ;; 
-        linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
-        *)        echo "unknown: $OSTYPE" ;;
-    esac
-    server=https://${CLUSTER_IP}:${KIND_CLUSTER_NODEPORT}
-fi
-
-token=$(get_bootstrap_token)
-
 if [ ! -z "$1" ]; then
     echo "External IP $1 has been provided, using for join command generation"
     hubApiserver=https://$1:${KIND_CLUSTER_NODEPORT}
 else
-    hubApiserver=${server}
+    # TODO - improve detection of host IP
+    if [ "$USE_KIND" == "true" ]; then 
+        case "$OSTYPE" in
+            darwin*)  CLUSTER_IP=$(ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' | head -n 1 ) ;; 
+            linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
+            *)        echo "unknown: $OSTYPE" ;;
+        esac
+        hubApiserver=https://${CLUSTER_IP}:${KIND_CLUSTER_NODEPORT}
+    fi
 fi
+
+token=$(get_bootstrap_token)
 
 echo ""
 echo "cluster manager has been started! To join clusters run the command (make sure to use the correct <cluster-name>:"
