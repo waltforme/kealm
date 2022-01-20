@@ -78,11 +78,12 @@ create_certs() {
         EXTERNAL_IP=""
     else    
         EXTERNAL_IP=${2},
-    fi    
+    fi
+    echo "creating certs for IP=${IP} and external IP=${EXTERNAL_IP}"
     mkdir -p ${VKS_HOME}/pki
     rm ${VKS_HOME}/*.conf &>/dev/null
     kubeadm init phase certs --cert-dir=${VKS_HOME}/pki \
-    --control-plane-endpoint=$1 \
+    --control-plane-endpoint=$IP \
     --apiserver-cert-extra-sans=${EXTERNAL_IP}${VKS_NAME},${VKS_NAME}.${VKS_NS},${VKS_NAME}.${VKS_NS}.svc,${VKS_NAME}.${VKS_NS}.svc.cluster.local  all 2>/dev/null
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} admin 2>/dev/null
     kubeadm init phase kubeconfig --cert-dir=${VKS_HOME}/pki --kubeconfig-dir=${VKS_HOME} controller-manager 2>/dev/null
@@ -290,6 +291,7 @@ if [ "$USE_KIND" == "true" ]; then
         *)        echo "unknown: $OSTYPE" ;;
     esac
 fi    
+
 
 create_certs $CLUSTER_IP $externalIP
 
