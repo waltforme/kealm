@@ -245,13 +245,18 @@ EOF
 }
 
 generate_cluster_info() {
+  if [ "$2" != "" ]; then 
+    IP=$2
+  else
+    IP=$1
+  fi    
   kubectl -n kube-public --kubeconfig=${VKS_HOME}/admin.conf get configmap cluster-info &>/dev/null
   if [ "$?" -eq 0 ]; then
-    echo "Cluster info found, skipping generation"
+    echo "Cluster info found, re-creating"
+    kubectl -n kube-public --kubeconfig=${VKS_HOME}/admin.conf create configmap cluster-info
     return
   fi
   echo "Generating new cluster info"
-  IP=$1
   kubectl config set-cluster bootstrap \
   --kubeconfig=${VKS_HOME}/bootstrap-kubeconfig-public  \
   --server=https://${IP}:${KIND_CLUSTER_NODEPORT}\
@@ -259,7 +264,7 @@ generate_cluster_info() {
   --embed-certs=true
 
   kubectl -n kube-public --kubeconfig=${VKS_HOME}/admin.conf create configmap cluster-info \
-  --from-file=kubeconfig=${VKS_HOME}/bootstrap-kubeconfig-public  
+  --from-file=kubeconfig=${VKS_HOME}/bootstrap-kubeconfig-public 
 }
 
 ###########################################################################################
@@ -312,4 +317,4 @@ apply_cm_manifests
 
 create_bootstrap_token
 
-generate_cluster_info $CLUSTER_IP
+generate_cluster_info $CLUSTER_IP $externalIP
