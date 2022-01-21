@@ -1,0 +1,45 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vksjob
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - namespaces
+  - services
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - delete
+  - watch
+  - update
+- apiGroups:
+  - "apps"
+  resources:
+  - statefulsets
+  - deployments
+  verbs:
+  - get
+  - list
+  - create
+  - delete
+  - watch
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vksjob
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vksjob
+subjects:
+- kind: ServiceAccount
+  name: vksjob
+  namespace: default

@@ -336,3 +336,10 @@ KUBE_BUILD_PLATFORMS=darwin/amd64 build/run.sh make WHAT=cmd/kubeadm
 sudo cp _output/dockerized/bin/darwin/amd64/kubeadm /usr/local/bin
 ```
 
+### Hacks
+
+Getting kubeconfig from secret:
+
+```
+kubectl get secrets -n vks1-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d
+```

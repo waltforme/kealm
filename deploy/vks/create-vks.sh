@@ -157,8 +157,9 @@ apply_manifests() {
 
 update_kubeconfig() {
     IP=$1
+    PORT=$2
     CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
-    sed -i.bak "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf
+    sed -i.bak "s|${CURRENT_SERVER}|https://${IP}:${PORT}|g" ${VKS_HOME}/admin.conf
     rm ${VKS_HOME}/admin.conf.bak
 }
 
@@ -210,6 +211,19 @@ create_cm_secret() {
     kubectl -n ${VKS_NS} delete secret cm-kubeconfig &>/dev/null
     kubectl -n ${VKS_NS} create secret generic cm-kubeconfig \
         --from-file=${VKS_HOME}/controller-manager.conf 
+}
+
+create_kubeconfig_secret() {
+    IP=$1
+    if [ "$2" != "" ]; then
+        IP=$2
+        echo "using external IP ${IP} for kubeconfig_secret"
+    fi    
+    CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
+    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf > ${VKS_HOME}/admin.kubeconfig 
+    kubectl -n ${VKS_NS} delete secret admin-kubeconfig &>/dev/null
+    kubectl -n ${VKS_NS} create secret generic admin-kubeconfig \
+        --from-file=${VKS_HOME}/admin.kubeconfig 
 }
 
 apply_cm_manifests() {
@@ -272,28 +286,51 @@ generate_cluster_info() {
 #                   Main   
 ###########################################################################################
 
-unset KUBECONFIG
+# unset KUBECONFIG
 
-if [ ! -z "$1" ]; then
-    echo "External IP $1 has been provided, setting in SANs"
-    externalIP=$1
+# if [ ! -z "$1" ]; then
+#     echo "External IP $1 has been provided, setting in SANs"
+#     externalIP=$1
+# fi
+
+
+# if [ "$USE_KIND" == "true" ]; then 
+#     kind_cluster_exists=$(check_kind_cluster_exists)
+#     if [ "$kind_cluster_exists" == "false" ]; then
+#         create_kind_cluster
+#     fi
+#     case "$OSTYPE" in
+#         darwin*)  CLUSTER_IP=$(get_host_ip) ;; 
+#         linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
+#         *)        echo "unknown: $OSTYPE" ;;
+#     esac
+# fi    
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 --host-ip <host-ip> [--external-ip <external-ip>]"
+    exit
 fi
 
+ARGS=$(getopt -a --options h:e: --long "host-ip:,external-ip:" -- "$@")
+eval set -- "$ARGS"
 
-if [ "$USE_KIND" == "true" ]; then 
-    kind_cluster_exists=$(check_kind_cluster_exists)
-    if [ "$kind_cluster_exists" == "false" ]; then
-        create_kind_cluster
-    fi
-    case "$OSTYPE" in
-        darwin*)  CLUSTER_IP=$(get_host_ip) ;; 
-        linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
-        *)        echo "unknown: $OSTYPE" ;;
-    esac
-fi    
+while true; do
+  case "$1" in
+    -h|--host-ip)
+      CLUSTER_IP="$2"
+      shift 2;;
+    -e|--external-ip)
+      externalIP="$2"
+      shift 2;; 
+    --)
+      break;;
+     *)
+      printf "Unknown option %s\n" "$1"
+      exit 1;;
+  esac
+done
 
-
-create_certs $CLUSTER_IP $externalIP
+create_certs ${CLUSTER_IP} ${externalIP}
 
 create_vks_ns
 
@@ -307,7 +344,7 @@ configure_manifests ${DB_PASSWORD}
 
 apply_manifests
 
-update_kubeconfig $CLUSTER_IP
+update_kubeconfig ${VKS_NAME}.${VKS_NS}.svc ${API_SERVER_PORT}
 
 check_vks_up
 
@@ -315,8 +352,10 @@ upload_kubeadm_config
 
 create_cm_secret
 
+create_kubeconfig_secret ${CLUSTER_IP} ${externalIP}
+
 apply_cm_manifests
 
 create_bootstrap_token
 
-generate_cluster_info $CLUSTER_IP $externalIP
+generate_cluster_info ${CLUSTER_IP} ${externalIP}

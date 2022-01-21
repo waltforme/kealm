@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vksjob
+spec:
+  template:
+    spec:
+      serviceAccount: vksjob
+      restartPolicy: Never
+      containers:
+      - name: vksjob
+        image: quay.io/pdettori/vksbuilder:latest
+        imagePullPolicy: Never
+        env:
+          - name: VKS_NAME
+            value: vks2
+        command: 
+          - /deploy/create-instance.sh
+          - --host-ip=172.31.37.22
+          - --external-ip=18.221.76.241
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "512m"
+  backoffLimit: 1
+  
