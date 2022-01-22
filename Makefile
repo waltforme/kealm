@@ -96,7 +96,7 @@ docker-push: ## Push docker image with the manager.
 
 .PHONY: docker-build-job
 docker-build-job: ## Build docker image with for vks job
-	docker build -t ${JOB_IMG} -f deploy/job/Dockerfile .
+	docker build -t ${JOB_IMG} -f deploy/job/Dockerfile deploy/job
 
 .PHONY: docker-load-job
 docker-load-job: ## Load vks image in kind

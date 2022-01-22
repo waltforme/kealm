@@ -10,6 +10,6 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     mv kubeadm /usr/local/bin &&\
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-COPY deploy/ deploy/
+COPY tasks/ tasks/
 
 ENV USER_UID=10001

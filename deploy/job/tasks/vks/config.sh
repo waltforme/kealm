@@ -1,11 +1,11 @@
 #!/bin/bash
 
-PROJECT_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 USE_KIND="${USE_KIND:-true}"
 
 VKS_NAME="${VKS_NAME:-vks1}"
-VKS_HOME=${PROJECT_HOME}/.${VKS_NAME}
+VKS_HOME=${SCRIPT_DIR}/.${VKS_NAME}
 DB_RELEASE_NAME=mypsql
 VKS_NS=${VKS_NAME}-system
 KIND_CLUSTER_NAME=vkshost

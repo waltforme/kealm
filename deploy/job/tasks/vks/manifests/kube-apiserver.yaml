@@ -16,6 +16,7 @@ spec:
         app: kube-apiserver
     spec:
       containers:
+      # TODO - use single postgres
       - name: kine
         image: rancher/kine:v0.8.1-amd64
         command:

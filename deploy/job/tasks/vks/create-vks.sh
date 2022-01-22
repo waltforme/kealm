@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PROJECT_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source ${PROJECT_HOME}/deploy/vks/config.sh
+source ${SCRIPT_DIR}/config.sh
 
 ###############################################################################################
 #               Functions
@@ -19,7 +19,7 @@ check_kind_cluster_exists() {
 
 create_kind_cluster() {
     mkdir -p ${VKS_HOME}/kind
-    cat ${PROJECT_HOME}/deploy/vks/manifests/kind-cluster.yaml | \
+    cat ${SCRIPT_DIR}/manifests/kind-cluster.yaml | \
         sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g" | \
         sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/kind/kind-cluster.yaml
     kind create cluster --config=${VKS_HOME}/kind/kind-cluster.yaml --wait 5m
@@ -134,18 +134,18 @@ create_or_update_certs_secret() {
 configure_manifests() {
     DB_PASSWORD=$1
     mkdir -p ${VKS_HOME}/manifests
-    cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver.yaml | \
+    cat ${SCRIPT_DIR}/manifests/kube-apiserver.yaml | \
         sed "s/{{ .DBPassword }}/${DB_PASSWORD}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
         sed "s/{{ .vksNS }}/${VKS_NS}/g" | \
         sed "s/{{ .DBReleaseName }}/${DB_RELEASE_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver.yaml
 
-    cat ${PROJECT_HOME}/deploy/vks/manifests/kube-apiserver-service.yaml | \
+    cat ${SCRIPT_DIR}/manifests/kube-apiserver-service.yaml | \
         sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
         sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml
 
-    cat ${PROJECT_HOME}/deploy/vks/manifests/kube-controller-manager.yaml | \
+    cat ${SCRIPT_DIR}/manifests/kube-controller-manager.yaml | \
         sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
         sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" > ${VKS_HOME}/manifests/kube-controller-manager.yaml
 }
@@ -285,26 +285,6 @@ generate_cluster_info() {
 ###########################################################################################
 #                   Main   
 ###########################################################################################
-
-# unset KUBECONFIG
-
-# if [ ! -z "$1" ]; then
-#     echo "External IP $1 has been provided, setting in SANs"
-#     externalIP=$1
-# fi
-
-
-# if [ "$USE_KIND" == "true" ]; then 
-#     kind_cluster_exists=$(check_kind_cluster_exists)
-#     if [ "$kind_cluster_exists" == "false" ]; then
-#         create_kind_cluster
-#     fi
-#     case "$OSTYPE" in
-#         darwin*)  CLUSTER_IP=$(get_host_ip) ;; 
-#         linux*)   CLUSTER_IP=$(get_kind_cluster_ip) ;;
-#         *)        echo "unknown: $OSTYPE" ;;
-#     esac
-# fi    
 
 if [ "$#" -lt 1 ]; then
     echo "Usage: $0 --host-ip <host-ip> [--external-ip <external-ip>]"

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: vksjob
+  name: {{ .vksName }}-job
 spec:
   template:
     spec:
@@ -13,11 +13,11 @@ spec:
         imagePullPolicy: Never
         env:
           - name: VKS_NAME
-            value: vks2
+            value: {{ .vksName }}
         command: 
-          - /deploy/create-instance.sh
-          - --host-ip=172.31.37.22
-          - --external-ip=18.221.76.241
+          - /tasks/create-instance.sh
+          - --host-ip={{ .hostIP }}
+          - --external-ip={{ .externalIP }}
         resources:
           limits:
             memory: "512Mi"

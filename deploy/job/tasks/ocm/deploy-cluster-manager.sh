@@ -1,19 +1,19 @@
 #!/bin/bash
 
-PROJECT_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+HOME_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source ${PROJECT_HOME}/deploy/vks/config.sh
+source ${HOME_DIR}/../vks/config.sh
 
 ###############################################################################################
 #               Functions
 ###############################################################################################
 
 deploy_vks_manifests() {
-    kubectl --kubeconfig=${VKS_HOME}/admin.conf apply -f ${PROJECT_HOME}/deploy/ocm/vks-manifests
+    kubectl --kubeconfig=${VKS_HOME}/admin.conf apply -f ${HOME_DIR}/vks-manifests
 }
 
 deploy_cluster_manager() {
-    kubectl apply -n ${VKS_NS} -f ${PROJECT_HOME}/deploy/ocm/host-manifests
+    kubectl apply -n ${VKS_NS} -f ${HOME_DIR}/host-manifests
     kubectl -n ${VKS_NS} wait --for=condition=available --timeout=600s deployment/cluster-manager-registration-controller
 }
 
