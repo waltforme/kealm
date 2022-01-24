@@ -72,19 +72,19 @@ kubectl config use-context kind-cluster1
 
 clear
 
-pe "kubectl get nodes"
+DEMO_PROMPT="☸️  cluster1> "
 pe "kubectl get deployments"
-pe "kubectx kind-cluster2"
+pe "kubectl config use-context kind-cluster2"
 DEMO_PROMPT="☸️  cluster2> "
-pe "kubectl get nodes"
-
-exit
+pe "kubectl get deployments"
 
 pause
 
-pe "kubectl get deployments"
-pe "kubectx kind-cluster1"
+pe "kubectl config use-context kind-cluster1"
 DEMO_PROMPT="☸️  cluster1> "
+pe "kubectl get deployments"
+pe "kubectl config use-context kind-cluster2"
+DEMO_PROMPT="☸️  cluster2> "
 pe "kubectl get deployments"
 
 pause 

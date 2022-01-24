@@ -10,8 +10,7 @@ source ${SCRIPT_DIR}/demo-magic
 TYPE_SPEED=30
 TYPE_SPEED_BK=$TYPE_SPEED
 #PROMPT_AFTER=1
-DEMO_PROMPT="☸️  vkshost> "
-#DEMO_PROMPT="\U0001F4F3 $ "
+DEMO_PROMPT="\☸️ vkshost> "
 
 function pause() {
   if [[ -n "${NO_WAIT}" ]]; then
@@ -62,107 +61,107 @@ clear
 
 VKS=vks1
 
-# pe "kubectl config current-context"
-# pe "kubectl get nodes"
-# # pe "kubectl vh create vks1"
-# pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
-# pe "kubectl logs $pod -f"
-# pe "kubectl get pods -n ${VKS}-system"
+pe "kubectl config current-context"
+pe "kubectl get nodes"
+pe "kubectl vh create vks1"
+pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
+pe "kubectl logs $pod -f"
+pe "kubectl get pods -n ${VKS}-system"
 REG_OPTS=$(kubectl get cm -n vks1-system join-command -o jsonpath='{.data.join-cmd}' | sed -e "s/^\w*\ *//; 1{s/[^ ]\+\s*$//}")
 
-# pe "kubectl vh merge-kubeconfig ${VKS}"
+pe "kubectl vh merge-kubeconfig ${VKS}"
 pe "kubectl config use-context ${VKS}"
 DEMO_PROMPT="☸️  ${VKS}> "
-# pe "kubectl get nodes"
-# pe "kubectl get pods --all-namespaces"
-# pe "kubectl get managedclusters"
+pe "kubectl get nodes"
+pe "kubectl get pods --all-namespaces"
+pe "kubectl get managedclusters"
 
 # register cluster1
 CLUSTER=cluster1
-# pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
-# TYPE_SPEED=10000
-# pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
-# TYPE_SPEED=$TYPE_SPEED_BK
+pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
+TYPE_SPEED=10000
+pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
+TYPE_SPEED=$TYPE_SPEED_BK
 
-#pe "kubectl get csr"
-#pe "clusteradm accept --clusters $CLUSTER"
-# pe "kubectl get managedclusters"
+pe "kubectl get csr"
+pe "clusteradm accept --clusters $CLUSTER"
+pe "kubectl get managedclusters"
 
 # register cluster2
 CLUSTER=cluster2
-#pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
+pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
 TYPE_SPEED=10000
-#pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
+pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
 TYPE_SPEED=$TYPE_SPEED_BK
 
-# pe "kubectl get csr"
-# pe "clusteradm accept --clusters $CLUSTER"
-#pe "kubectl get managedclusters"
+pe "kubectl get csr"
+pe "clusteradm accept --clusters $CLUSTER"
+pe "kubectl get managedclusters"
 
 # register podman1
-# PODMAN=podman1
-# export SSH_CMD=${SSH_PODMAN1}
-# TYPE_SPEED=10000
-# #pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
-# TYPE_SPEED=$TYPE_SPEED_BK
-# pe "kubectl get csr"
-# pe "clusteradm accept --clusters $PODMAN"
-# pe "kubectl get managedclusters"
+PODMAN=podman1
+export SSH_CMD=${SSH_PODMAN1}
+TYPE_SPEED=10000
+#pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+TYPE_SPEED=$TYPE_SPEED_BK
+pe "kubectl get csr"
+pe "clusteradm accept --clusters $PODMAN"
+pe "kubectl get managedclusters"
 
 #register podman2
-# PODMAN=podman2
-# export SSH_CMD=${SSH_PODMAN2}
-# TYPE_SPEED=10000
-# pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
-# TYPE_SPEED=$TYPE_SPEED_BK
-# pe "kubectl get csr"
-# pe "clusteradm accept --clusters $PODMAN"
-# pe "kubectl get managedclusters"
+PODMAN=podman2
+export SSH_CMD=${SSH_PODMAN2}
+TYPE_SPEED=10000
+pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+TYPE_SPEED=$TYPE_SPEED_BK
+pe "kubectl get csr"
+pe "clusteradm accept --clusters $PODMAN"
+pe "kubectl get managedclusters"
 
-# # create clustersets
-# pe "kubectl apply -f examples/clusterset1.yaml"
-# pe "kubectl apply -f examples/clusterset2.yaml"
+# create clustersets
+pe "kubectl apply -f examples/clusterset1.yaml"
+pe "kubectl apply -f examples/clusterset2.yaml"
 
-# # create clustersets bindings
-# pe "kubectl apply -f examples/clusterset1-binding.yaml"
-# pe "kubectl apply -f examples/clusterset2-binding.yaml"
+# create clustersets bindings
+pe "kubectl apply -f examples/clusterset1-binding.yaml"
+pe "kubectl apply -f examples/clusterset2-binding.yaml"
 
 
 # label all clusters
-# CLUSTER=cluster1
-# TYPE_SPEED=1000
-# pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
-# pe "kubectl label managedcluster $CLUSTER  location=edge1"
+CLUSTER=cluster1
+TYPE_SPEED=1000
+pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
+pe "kubectl label managedcluster $CLUSTER  location=edge1"
 
-# CLUSTER=cluster2
-# pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
-# pe "kubectl label managedcluster $CLUSTER  location=edge1"
+CLUSTER=cluster2
+pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
+pe "kubectl label managedcluster $CLUSTER  location=edge1"
 
-# PODMAN=podman1
-# pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
-# pe "kubectl label managedcluster $PODMAN  location=edge2"
+PODMAN=podman1
+pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
+pe "kubectl label managedcluster $PODMAN  location=edge2"
 
-# PODMAN=podman2
-# pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
-# pe "kubectl label managedcluster $PODMAN  location=edge2"
+PODMAN=podman2
+pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
+pe "kubectl label managedcluster $PODMAN  location=edge2"
 
-# # show & apply policy
-# pe "vim examples/placement1.yaml"
-# pe "kubectl apply -f examples/placement1.yaml"
+# show & apply policy
+pe "vim examples/placement1.yaml"
+pe "kubectl apply -f examples/placement1.yaml"
 
-# pe "vim examples/placement2.yaml"
-# pe "kubectl apply -f examples/placement2.yaml"
+pe "vim examples/placement2.yaml"
+pe "kubectl apply -f examples/placement2.yaml"
 
 # create appbundle1
-# pe "vim examples/appbundle1.yaml"
-# pe "kubectl apply -f examples/appbundle1.yaml"
-# pe "kubectl get manifestworks --all-namespaces"
+pe "vim examples/appbundle1.yaml"
+pe "kubectl apply -f examples/appbundle1.yaml"
+pe "kubectl get manifestworks --all-namespaces"
 
-# # create appbundle2 & deployment
-# pe "vim examples/appbundle2-empty.yaml"
-# pe "kubectl apply -f examples/appbundle2-empty.yaml"
-# pe "vim examples/deployment1.yaml"
-# pe "kubectl apply -f examples/deployment1.yaml"
+# create appbundle2 & deployment
+pe "vim examples/appbundle2-empty.yaml"
+pe "kubectl apply -f examples/appbundle2-empty.yaml"
+pe "vim examples/deployment1.yaml"
+pe "kubectl apply -f examples/deployment1.yaml"
 
 # create appbundle3
 pe "vim examples/appbundle3.yaml"
