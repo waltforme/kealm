@@ -1,0 +1,100 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HOME_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+
+source ${SCRIPT_DIR}/config
+source ${SCRIPT_DIR}/demo-magic
+
+TYPE_SPEED=30
+#PROMPT_AFTER=1
+DEMO_PROMPT="☸️  cluster1> "
+
+function pause() {
+  if [[ -n "${NO_WAIT}" ]]; then
+    sleep 2
+  else
+    if [[ -n "${1-}" ]]; then
+      sleep "$1"
+    else
+      wait
+    fi
+  fi
+}
+
+END=false
+function end() {
+  END=true
+}
+trap end SIGINT
+
+check_kind_cluster_exists() {
+    KIND_CLUSTER_NAME=$1
+    kind get kubeconfig --name ${KIND_CLUSTER_NAME} &> /dev/null
+    if [ "$?" -eq 0 ]; then
+        echo "true"
+    else
+        echo "false" 
+    fi
+}
+
+create_kind_cluster() {
+    KIND_CLUSTER_NAME=$1
+    kind create cluster ${KIND_CLUSTER_NAME} --wait 5m
+}
+
+if [ "$START_CLEAN" == "true" ]; then
+  echo "start clean !"
+  kind delete cluster --name cluster1
+  kind delete cluster --name cluster2
+fi
+
+kind_cluster_exists=$(check_kind_cluster_exists cluster1)
+if [ "$kind_cluster_exists" == "false" ]; then
+    create_kind_cluster cluster1
+fi
+
+kind_cluster_exists=$(check_kind_cluster_exists cluster2)
+if [ "$kind_cluster_exists" == "false" ]; then
+    create_kind_cluster cluster2
+fi
+
+unset KUBECONFIG
+
+exit
+
+
+# make sure we start with a clean slate
+kubectl config use-context kind-cluster1
+kubectl delete deployments --all &> /dev/null
+
+kubectl config use-context kind-cluster2
+kubectl delete deployments --all &> /dev/null
+
+kubectl config use-context kind-cluster1
+
+clear
+
+pe "kubectl get nodes"
+pe "kubectl get deployments"
+pe "kubectx kind-cluster2"
+DEMO_PROMPT="☸️  cluster2> "
+pe "kubectl get nodes"
+
+exit
+
+pause
+
+pe "kubectl get deployments"
+pe "kubectx kind-cluster1"
+DEMO_PROMPT="☸️  cluster1> "
+pe "kubectl get deployments"
+
+pause 
+
+while [ "$END" == "false" ]
+do
+  cmd
+done
+
+wait

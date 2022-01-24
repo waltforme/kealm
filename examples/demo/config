@@ -1,0 +1,37 @@
+#!/bin/bash
+# Config the env variables for the demo
+
+VKS_HOST_CTX=kind-vkshost
+START_CLEAN="${START_CLEAN:-false}"
+DELETE_PODMAN_AGENTS="${DELETE_PODMAN_AGENTS:-false}"
+SSH_CLUSTERS="ssh ubuntu@18.188.59.138"
+SSH_PODMAN1="ssh fedora@3.135.197.148"
+SSH_PODMAN2="ssh fedora@18.117.103.14"
+
+
+
+#####################
+USE_EDGE2="${USE_EDGE2:-true}"
+EDGE2_IP="${EDGE2_IP:-18.116.240.175}"
+EDGE2_PORT=6445
+USE_SPLITTER="${USE_SPLITTER:-false}"
+REGISTER_CLUSTERS="${REGISTER_CLUSTERS:-false}"
+
+HUB_DIR=${HOME}/kcp
+EDGE_DIR=${HOME}/edge
+CLUSTER1=cluster1
+CLUSTER2=cluster2
+EDGE_CLUSTER1=edge1
+EDGE_CLUSTER2=edge2
+CLUSTERS_DIR=~/locations
+KUBECONFIG_EDGE1=${EDGE_DIR}/.kcp/data/admin.kubeconfig
+KUBECONFIG_EDGE2=${HOME}/edge2.kubeconfig
+KUBECONFIG_EDGE_MERGED=${HOME}/edge-merged.kubeconfig
+
+
+
+
+
+
+
+

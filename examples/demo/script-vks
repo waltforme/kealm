@@ -1,0 +1,160 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HOME_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+CYMBA_DIR=${HOME_DIR}/../cymba
+
+source ${SCRIPT_DIR}/config
+source ${SCRIPT_DIR}/demo-magic
+
+TYPE_SPEED=30
+TYPE_SPEED_BK=$TYPE_SPEED
+#PROMPT_AFTER=1
+DEMO_PROMPT="☸️  vkshost> "
+#DEMO_PROMPT="\U0001F4F3 $ "
+
+function pause() {
+  if [[ -n "${NO_WAIT}" ]]; then
+    sleep 2
+  else
+    if [[ -n "${1-}" ]]; then
+      sleep "$1"
+    else
+      wait
+    fi
+  fi
+}
+
+END=false
+function end() {
+  END=true
+}
+trap end SIGINT
+
+kubectl config use-context ${VKS_HOST_CTX}
+cd $HOME_DIR
+export PATH=$PATH:$(pwd)/deploy
+
+if [ "$START_CLEAN" == "true" ]; then
+  echo "start clean !"
+  kubectl vh delete vks1 2> /dev/null
+  kubectl vh delete vks2 2> /dev/null
+  kubectl vh delete vks3 2> /dev/null
+  kubectl delete ns vks-system 2> /dev/null
+  kubectl vh delete-kubeconfig vks1
+  kubectl vh delete-kubeconfig vks2
+  kubectl vh delete-kubeconfig vks3
+fi
+
+if [ "$DELETE_PODMAN_AGENTS" == "true" ]; then
+  echo "delete podman agents !"
+  export SSH_CMD=${SSH_PODMAN1}
+  ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
+  export SSH_CMD=${SSH_PODMAN2}
+  ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
+  ${SSH_PODMAN1} podman pod rm --all
+  ${SSH_PODMAN2} podman pod rm --all
+fi  
+
+clear
+
+#### Demo starts here ####
+
+VKS=vks1
+
+# pe "kubectl config current-context"
+# pe "kubectl get nodes"
+# # pe "kubectl vh create vks1"
+# pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
+# pe "kubectl logs $pod -f"
+# pe "kubectl get pods -n ${VKS}-system"
+REG_OPTS=$(kubectl get cm -n vks1-system join-command -o jsonpath='{.data.join-cmd}' | sed -e "s/^\w*\ *//; 1{s/[^ ]\+\s*$//}")
+
+# pe "kubectl vh merge-kubeconfig ${VKS}"
+pe "kubectl config use-context ${VKS}"
+DEMO_PROMPT="☸️  ${VKS}> "
+# pe "kubectl get nodes"
+# pe "kubectl get pods --all-namespaces"
+# pe "kubectl get managedclusters"
+
+# register cluster1
+CLUSTER=cluster1
+# pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
+# TYPE_SPEED=10000
+# pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
+# TYPE_SPEED=$TYPE_SPEED_BK
+
+#pe "kubectl get csr"
+#pe "clusteradm accept --clusters $CLUSTER"
+pe "kubectl get managedclusters"
+
+# register cluster2
+CLUSTER=cluster2
+#pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
+TYPE_SPEED=10000
+#pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
+TYPE_SPEED=$TYPE_SPEED_BK
+
+# pe "kubectl get csr"
+# pe "clusteradm accept --clusters $CLUSTER"
+pe "kubectl get managedclusters"
+
+# register podman1
+# PODMAN=podman1
+# export SSH_CMD=${SSH_PODMAN1}
+# TYPE_SPEED=10000
+# #pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+# TYPE_SPEED=$TYPE_SPEED_BK
+# pe "kubectl get csr"
+# pe "clusteradm accept --clusters $PODMAN"
+# pe "kubectl get managedclusters"
+
+#register podman2
+# PODMAN=podman2
+# export SSH_CMD=${SSH_PODMAN2}
+# TYPE_SPEED=10000
+# pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+# TYPE_SPEED=$TYPE_SPEED_BK
+# pe "kubectl get csr"
+# pe "clusteradm accept --clusters $PODMAN"
+# pe "kubectl get managedclusters"
+
+# create clustersets
+pe "kubectl apply -f examples/clusterset1.yaml"
+pe "kubectl apply -f examples/clusterset2.yaml"
+
+# label all nodes
+
+exit
+
+
+pe "kubectl get pods"
+pe "kubectl get nodes"
+pe "kubectl api-resources -o name"
+pe "kubectl locations register -f ~/locations"
+pe "kubectl locations get"
+pe "kubectl get deployments"
+pe "vim ../examples/deployment1.yaml"
+pe "kubectl apply -f ../examples/deployment1.yaml"
+pe "kubectl get deployments"
+
+pause
+
+pe "vim ../examples/deployment2.yaml"
+pe "kubectl apply -f ../examples/deployment2.yaml"
+pe "kubectl get deployments"
+
+pause
+
+pe "kubectl get deployments -o=custom-columns-file=template.txt"
+
+pause
+
+pe "kubectl get deployments -o=custom-columns-file=template.txt"
+
+while [ "$END" == "false" ]
+do
+  cmd
+done
+
+wait

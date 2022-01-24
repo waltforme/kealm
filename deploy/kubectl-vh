@@ -38,7 +38,10 @@ case $CMD in
     ;;
 
   merge-kubeconfig)
-    cp ~/.kube/config ~/.kube/config.bak 
+    cp ~/.kube/config ~/.kube/config.bak
+    kubectl config unset users.${name}-admin &> /dev/null
+    kubectl config unset contexts.${name} &> /dev/null
+    kubectl config unset clusters.${name} &> /dev/null
     kubectl get secrets -n ${name}-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d > /tmp/${name}
     KUBECONFIG=~/.kube/config:/tmp/${name} kubectl config view --flatten > /tmp/config
     mv /tmp/config ~/.kube/config 
@@ -50,14 +53,14 @@ case $CMD in
     kubectl config unset users.${name}-admin
     kubectl config unset contexts.${name}
     kubectl config unset clusters.${name}
-    ;;
     exit
+    ;;
   psql)
     kubectl delete pod mypsql-postgresql-client --namespace vks-system &>/dev/null
     POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)
     kubectl run mypsql-postgresql-client --rm --tty -i --restart='Never' --namespace vks-system --image docker.io/bitnami/postgresql:11.14.0-debian-10-r28 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- psql --host mypsql-postgresql -U postgres -d postgres -p 5432
-    ;;    
     exit
+    ;;    
   *)
     echo "Unknown command"
     exit -1
