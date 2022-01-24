@@ -15,16 +15,23 @@ To run the virtual cluster/virtual hub creation script, you will need the follow
 
 ## Creating a virtual cluster
 
-Run the following command:
+Add the `vh` plugin to your path:
 
 ```
-deploy/create-vh.sh --name <virtual instance name> --host-ip <host-ip> [--external-ip <external-ip>]
+export PATH=$PATH:$(pwd)/deploy
 ```
 
-for example:
+(tip: you may add this statement to your ~/.bash_profile)
+
+
+Edit the file deploy/kubectl-vh and set the `HOST_IP` and `EXTERNAL_IP` for the IP of your host; if you don't have an
+external IP set that variable to empty.
+
+
+To create a new virtual hub, run the command:
 
 ```
-deploy/create-vh.sh --name=vks1 --host-ip=172.31.37.22 --external-ip=18.221.76.241
+kubectl vh create vks1
 ```
 
 this will create a virtual hub instance named 'vks1' in a kind cluster. To check the progress
@@ -83,14 +90,16 @@ Please log onto the hub cluster and run the following command:
     clusteradm accept --clusters cluster1
 ```    
 
-Open another terminal, cd to the project directory, and set `KUBECONFIG` to point to the virtual cluster:
+Create a new context for your new virtual hub by running:
 
-```shell
-VKS_NAME=vks1 # use the name of instance here
-mkdir -p ${HOME}/.vks
-unset KUBECONFIG
-kubectl get secrets -n ${VKS_NAME}-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d > ${HOME}/.vks/${VKS_NAME}.config
-export KUBECONFIG=${HOME}/.vks/${VKS_NAME}.config
+```
+kubectl vh merge-kubeconfig vks1
+```
+
+Then switch to the new virtual hub context:
+
+```
+kubectl config use-context vks1
 ```
 
 You should see a certificate signing request pending:
@@ -205,8 +214,7 @@ and resources are available:
 kubectl describe manifestwork -n cluster1 manifestwork1 
 ```
 
-Open a new terminal, make sure `KUBECONFIG` is unset (e.g. `unset KUBECONFIG`) and set the context 
-to point to `cluster1`:
+Switch to cluster1 context:
 
 ```shell
 kubectl config use-context kind-cluster1
@@ -248,7 +256,7 @@ The label `cluster.open-cluster-management.io/placement: placement1` binds the a
 Let's now switch back to vks and deploy the appbundle:
 
 ```shell
-# kubectl config use-context vks1 # TODO - document context usage
+kubectl config use-context vks1
 kubectl apply -f examples/appbundle1.yaml 
 ```
 
@@ -262,9 +270,10 @@ manifestwork1   23m
 appbundle1      6m
 ```
 
-You may theh check that the new deployment has been deployed to cluster1, going to the second terminal and running:
+You may theh check that the new deployment has been deployed to cluster1:
 
 ```shell
+kubectl config use-context kind-cluster1
 kubectl get pods
 
 NAME                                   READY   STATUS    RESTARTS   AGE
@@ -285,6 +294,7 @@ This model will still use the `appbundle` resource to back the resources applied
 so we will need to create an empty `appbundle` associated with a placement policy:
 
 ```shell
+kubectl config use-context vks1
 kubectl apply -f examples/appbundle2-empty.yaml
 ```
 
@@ -312,6 +322,7 @@ Go to the termoinal where kubectl was set to point to the managed cluster and
 check that the new deployment has been delivered to the managed cluster 
 
 ```shell
+kubectl config use-context kind-cluster1
 kubectl get pods
 
 NAME                                   READY   STATUS    RESTARTS   AGE
