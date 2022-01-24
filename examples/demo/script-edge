@@ -28,10 +28,10 @@ function end() {
 }
 trap end SIGINT
 
-pe "systemctl status cymba.service"
-pe "systemctl status ocm-registration"
-pe "systemctl status ocm-work"
 pe "podman pod ls"
+pe "systemctl status cymba.service --lines=0"
+pe "systemctl status ocm-registration --lines=0"
+pe "systemctl status ocm-work --lines=0"
 
 pause
 
