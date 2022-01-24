@@ -16,13 +16,12 @@ spec:
         app: kube-apiserver
     spec:
       containers:
-      # TODO - use single postgres
       - name: kine
         image: rancher/kine:v0.8.1-amd64
         command:
           - kine
           - --endpoint
-          - postgres://postgres:{{ .DBPassword }}@{{ .DBReleaseName }}-postgresql.{{ .vksNS }}.svc/postgres?sslmode=disable
+          - postgres://postgres:{{ .DBPassword }}@{{ .DBReleaseName }}-postgresql.{{ .vksDbNS }}.svc/{{ .vksName }}?sslmode=disable
         ports:
         - containerPort: 2379
       - name: kube-apiserver

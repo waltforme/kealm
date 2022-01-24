@@ -8,6 +8,7 @@ VKS_NAME="${VKS_NAME:-vks1}"
 VKS_HOME=${SCRIPT_DIR}/.${VKS_NAME}
 DB_RELEASE_NAME=mypsql
 VKS_NS=${VKS_NAME}-system
+VKSDB_NS=vks-system
 KIND_CLUSTER_NAME=vkshost
 
 # TODO - temporary hack for limitation with nodeports on kind

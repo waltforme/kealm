@@ -20,8 +20,8 @@ check_kind_cluster_exists() {
 create_kind_cluster() {
     mkdir -p ${VKS_HOME}/kind
     cat ${SCRIPT_DIR}/manifests/kind-cluster.yaml | \
-        sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g" | \
-        sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/kind/kind-cluster.yaml
+        sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g; \
+        s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/kind/kind-cluster.yaml
     kind create cluster --config=${VKS_HOME}/kind/kind-cluster.yaml --wait 5m
     check_node_ready
 }
@@ -100,17 +100,28 @@ metadata:
 EOF
 }
 
+create_vksdb_ns() {
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: ${VKSDB_NS}
+  name: ${VKSDB_NS}
+EOF
+}
+
 install_db() {
-    helm get --namespace ${VKS_NS} all ${DB_RELEASE_NAME} &> /dev/null
+    helm get --namespace ${VKSDB_NS} all ${DB_RELEASE_NAME} &> /dev/null
     if [ "$?" -eq 0 ]; then
         return
     fi    
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install --namespace ${VKS_NS} ${DB_RELEASE_NAME} bitnami/postgresql
+    helm install --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} bitnami/postgresql
 }
 
 get_db_password() {
-    DB_PASSWORD=$(kubectl get secret --namespace ${VKS_NS} ${DB_RELEASE_NAME}-postgresql \
+    DB_PASSWORD=$(kubectl get secret --namespace ${VKSDB_NS} ${DB_RELEASE_NAME}-postgresql \
         -o jsonpath="{.data.postgresql-password}" | base64 --decode)
     echo ${DB_PASSWORD}   
 }
@@ -135,19 +146,21 @@ configure_manifests() {
     DB_PASSWORD=$1
     mkdir -p ${VKS_HOME}/manifests
     cat ${SCRIPT_DIR}/manifests/kube-apiserver.yaml | \
-        sed "s/{{ .DBPassword }}/${DB_PASSWORD}/g" | \
-        sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
-        sed "s/{{ .vksNS }}/${VKS_NS}/g" | \
-        sed "s/{{ .DBReleaseName }}/${DB_RELEASE_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver.yaml
+        sed "s/{{ .DBPassword }}/${DB_PASSWORD}/g; \
+        s/{{ .securePort }}/${API_SERVER_PORT}/g;  \
+        s/{{ .vksNS }}/${VKS_NS}/g; \
+        s/{{ .vksDbNS }}/${VKSDB_NS}/g; \
+        s/{{ .vksName }}/${VKS_NAME}/g; \
+        s/{{ .DBReleaseName }}/${DB_RELEASE_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver.yaml
 
     cat ${SCRIPT_DIR}/manifests/kube-apiserver-service.yaml | \
-        sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
-        sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" | \
-        sed "s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml
+        sed "s/{{ .vksName }}/${VKS_NAME}/g;  \
+        s/{{ .securePort }}/${API_SERVER_PORT}/g; \
+        s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml
 
     cat ${SCRIPT_DIR}/manifests/kube-controller-manager.yaml | \
-        sed "s/{{ .vksName }}/${VKS_NAME}/g" | \
-        sed "s/{{ .securePort }}/${API_SERVER_PORT}/g" > ${VKS_HOME}/manifests/kube-controller-manager.yaml
+        sed "s/{{ .vksName }}/${VKS_NAME}/g; \
+        s/{{ .securePort }}/${API_SERVER_PORT}/g" > ${VKS_HOME}/manifests/kube-controller-manager.yaml
 }
 
 apply_manifests() {
@@ -186,24 +199,6 @@ upload_kubeadm_config() {
         -o jsonpath='{.data.ClusterConfiguration}' > ${VKS_HOME}/kubeadm.yaml
 }
 
-update_sans() {
-    IP=$1
-    python3 -c \
-    "import yaml;f=open(\"${VKS_HOME}/kubeadm.yaml\",'r');y=yaml.safe_load(f);\
-    y['apiServer']['certSANs']=[\"${IP}\",\"${VKS_NAME}\",\"${VKS_NAME}.${VKS_NS}\",\"${VKS_NAME}.${VKS_NS}.svc\",\"${VKS_NAME}.${VKS_NS}.svc.cluster.local\"];\
-    y['certificatesDir']=\"${VKS_HOME}/pki\";\
-    f.close();f=open(\"${VKS_HOME}/kubeadm.yaml\",'w');yaml.dump(y, f, default_flow_style=False, sort_keys=False)" 
-
-    mkdir -p ${VKS_HOME}/pki/backups
-    mv ${VKS_HOME}/pki/apiserver.{crt,key} ${VKS_HOME}/pki/backups
-    kubeadm init phase certs apiserver --config ${VKS_HOME}/kubeadm.yaml 2>/dev/null
-}
-
-restart_api_server() {
-    kubectl scale deploy -n ${VKS_NS} --replicas=0 kube-apiserver
-    kubectl scale deploy -n ${VKS_NS} --replicas=1 kube-apiserver
-}
-
 create_cm_secret() {
     CURRENT_SERVER=$(cat ${VKS_HOME}/controller-manager.conf | grep server: | awk '{print $2}')
     sed -i.bak "s|${CURRENT_SERVER}|https://${VKS_NAME}:${API_SERVER_PORT}|g" ${VKS_HOME}/controller-manager.conf 
@@ -220,7 +215,10 @@ create_kubeconfig_secret() {
         echo "using external IP ${IP} for kubeconfig_secret"
     fi    
     CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
-    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g" ${VKS_HOME}/admin.conf > ${VKS_HOME}/admin.kubeconfig 
+    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g; \
+         s|kubernetes-admin@kubernetes|${VKS_NAME}|g; \
+         s|kubernetes|${VKS_NAME}|g" \
+         ${VKS_HOME}/admin.conf > ${VKS_HOME}/admin.kubeconfig 
     kubectl -n ${VKS_NS} delete secret admin-kubeconfig &>/dev/null
     kubectl -n ${VKS_NS} create secret generic admin-kubeconfig \
         --from-file=${VKS_HOME}/admin.kubeconfig 
@@ -313,6 +311,8 @@ done
 create_certs ${CLUSTER_IP} ${externalIP}
 
 create_vks_ns
+
+create_vksdb_ns
 
 install_db
 

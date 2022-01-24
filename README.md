@@ -122,7 +122,7 @@ cluster1   true           https://192.168.1.153:31433   True     True        4m4
 Create a `clusterset` to represent a set of managed clusters:
 
 ```shell
-kubectl apply -f deploy/ocm/example/clusterset1.yaml 
+kubectl apply -f examples/clusterset1.yaml 
 ```  
 
 `managedclusters` and `clustersets` are cluster-scoped resources, while placement policies
@@ -131,7 +131,7 @@ to specify a `clustersetbinding`, which allows now to define policies in the bou
 `default` namespace. 
 
 ```shell
-kubectl apply -f deploy/ocm/example/clusterset1-binding.yaml 
+kubectl apply -f examples/clusterset1-binding.yaml 
 ```
 
 Add a label to the managed cluster to add the cluster to the clusterset, and another label
@@ -145,7 +145,7 @@ kubectl label managedcluster cluster1 location=edge1
 finally, create a placement policy to select clusters in the clusterset with the label `location=edge1`
 
 ```shell
-kubectl apply -f deploy/ocm/example/placement1.yaml
+kubectl apply -f examples/placement1.yaml
 ```
 
 check that policy produces a `placementdecision` and that it targets the cluster with the specified label 
@@ -195,7 +195,7 @@ cluster1                      Active   14h
 and create a workload on `cluster1` with `manifestwork`:
 
 ```shell
-kubectl apply -f deploy/ocm/example/manifestwork1.yaml -n cluster1
+kubectl apply -f examples/manifestwork1.yaml -n cluster1
 ```
 
 Check the status of the manifest to verify it has been applied on the managed cluster
@@ -221,7 +221,7 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          2m
 ```
 
 ```shell
-$ kubectl get sa
+kubectl get sa
 
 NAME      SECRETS   AGE
 default   1         15h
@@ -240,15 +240,16 @@ cluster namespace.
 Take a look to this example of appbundle:
 
 ```shell
-cat deploy/ocm/example/appbundle1.yaml 
+cat examples/appbundle1.yaml 
 ```
 
 The label `cluster.open-cluster-management.io/placement: placement1` binds the appbundle to the policy `placement1`.
 
-Let's now deploy the appbundle:
+Let's now switch back to vks and deploy the appbundle:
 
 ```shell
-kubectl apply -f deploy/ocm/example/appbundle1.yaml 
+# kubectl config use-context vks1 # TODO - document context usage
+kubectl apply -f examples/appbundle1.yaml 
 ```
 
 Check that a new manifestwork have been created, with the same name of the bundle:
@@ -284,13 +285,13 @@ This model will still use the `appbundle` resource to back the resources applied
 so we will need to create an empty `appbundle` associated with a placement policy:
 
 ```shell
-kubectl apply -f deploy/ocm/example/appbundle2-empty.yaml
+kubectl apply -f examples/appbundle2-empty.yaml
 ```
 
 We can then apply a deployment associated with this new bundle:
 
 ```shell
-kubectl apply -f deploy/ocm/example/deployment1.yaml 
+kubectl apply -f examples/deployment1.yaml 
 ```
 
 check that pods are NOT created on the virtual cluster:
@@ -319,10 +320,25 @@ appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 ```
 
-### Hacks
+### HowTo
 
-Getting kubeconfig from secret:
+#### Get kubeconfig from secret
 
 ```
-kubectl get secrets -n vks1-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d
+kubectl get secrets -n <vks-name>-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d
 ```
+
+#### Get join parameters from configmap
+
+```
+kubectl get cm -n <vks-name>-system join-command -o jsonpath='{.data.join-cmd}'
+```
+
+### Listing DBs
+
+use kubectl vh psql and then `\l`
+
+
+### Dropping a DB
+
+use kubectl vh psql and then `DROP DATABASE <db name>;
