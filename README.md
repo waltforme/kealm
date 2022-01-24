@@ -12,35 +12,45 @@ To run the virtual cluster/virtual hub creation script, you will need the follow
 - docker
 - kind
 - kubectl
-- helm
-- [clusteradm](https://github.com/open-cluster-management-io/clusteradm)
-- [kubeadm](#installing-kubeadm)
-- jq
-- go >= 1.16 (if installing on `macos`, for building `kubeadm` )
-
 
 ## Creating a virtual cluster
 
 Run the following command:
 
 ```
-deploy/create-instance.sh 
+deploy/create-vh.sh --name <virtual instance name> --host-ip <host-ip> [--external-ip <external-ip>]
 ```
 
-this will create a virtual cluster instance in a kind cluster. 
+for example:
 
-After the script completes, you will get a message similar to:
+```
+deploy/create-vh.sh --name=vks1 --host-ip=172.31.37.22 --external-ip=18.221.76.241
+```
+
+this will create a virtual hub instance named 'vks1' in a kind cluster. To check the progress
+and results, you may check the logs for the pod started in a job:
+
+e.g.
+
+```
+kubectl logs vks1-job-<some id> -f
+```
+
+After the job completes, you will get a message similar to:
 
 ```shell
+...
 cluster manager has been started! To join clusters run the command (make sure to use the correct <cluster-name>:
 
 clusteradm join --hub-token <token> --hub-apiserver <api-server-url> --cluster-name <cluster-name>
 ```
 
-You may now check the status of the virtual cluster by checking the pods running in the `vks-system` namespace:
+You may now check the status of the virtual cluster by checking the pods running in the `<virtual hub>-system` namespace:
+
+e.g. 
 
 ```shell
-kubectl get pods -n vks-system
+kubectl get pods -n vks1-system
 
 NAME                                                       READY   STATUS    RESTARTS   AGE
 cluster-manager-extensions-54b758b6d5-qx86t                1/1     Running   0          3h24m
@@ -76,7 +86,11 @@ Please log onto the hub cluster and run the following command:
 Open another terminal, cd to the project directory, and set `KUBECONFIG` to point to the virtual cluster:
 
 ```shell
-export KUBECONFIG=.vks/admin.conf
+VKS_NAME=vks1 # use the name of instance here
+mkdir -p ${HOME}/.vks
+unset KUBECONFIG
+kubectl get secrets -n ${VKS_NAME}-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d > ${HOME}/.vks/${VKS_NAME}.config
+export KUBECONFIG=${HOME}/.vks/${VKS_NAME}.config
 ```
 
 You should see a certificate signing request pending:
@@ -108,7 +122,7 @@ cluster1   true           https://192.168.1.153:31433   True     True        4m4
 Create a `clusterset` to represent a set of managed clusters:
 
 ```shell
-kubectl apply -f deploy/ocm/example/clusterset1.yaml 
+kubectl apply -f examples/clusterset1.yaml 
 ```  
 
 `managedclusters` and `clustersets` are cluster-scoped resources, while placement policies
@@ -117,7 +131,7 @@ to specify a `clustersetbinding`, which allows now to define policies in the bou
 `default` namespace. 
 
 ```shell
-kubectl apply -f deploy/ocm/example/clusterset1-binding.yaml 
+kubectl apply -f examples/clusterset1-binding.yaml 
 ```
 
 Add a label to the managed cluster to add the cluster to the clusterset, and another label
@@ -131,7 +145,7 @@ kubectl label managedcluster cluster1 location=edge1
 finally, create a placement policy to select clusters in the clusterset with the label `location=edge1`
 
 ```shell
-kubectl apply -f deploy/ocm/example/placement1.yaml
+kubectl apply -f examples/placement1.yaml
 ```
 
 check that policy produces a `placementdecision` and that it targets the cluster with the specified label 
@@ -181,7 +195,7 @@ cluster1                      Active   14h
 and create a workload on `cluster1` with `manifestwork`:
 
 ```shell
-kubectl apply -f deploy/ocm/example/manifestwork1.yaml -n cluster1
+kubectl apply -f examples/manifestwork1.yaml -n cluster1
 ```
 
 Check the status of the manifest to verify it has been applied on the managed cluster
@@ -207,7 +221,7 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          2m
 ```
 
 ```shell
-$ kubectl get sa
+kubectl get sa
 
 NAME      SECRETS   AGE
 default   1         15h
@@ -226,15 +240,16 @@ cluster namespace.
 Take a look to this example of appbundle:
 
 ```shell
-cat deploy/ocm/example/appbundle1.yaml 
+cat examples/appbundle1.yaml 
 ```
 
 The label `cluster.open-cluster-management.io/placement: placement1` binds the appbundle to the policy `placement1`.
 
-Let's now deploy the appbundle:
+Let's now switch back to vks and deploy the appbundle:
 
 ```shell
-kubectl apply -f deploy/ocm/example/appbundle1.yaml 
+# kubectl config use-context vks1 # TODO - document context usage
+kubectl apply -f examples/appbundle1.yaml 
 ```
 
 Check that a new manifestwork have been created, with the same name of the bundle:
@@ -270,13 +285,13 @@ This model will still use the `appbundle` resource to back the resources applied
 so we will need to create an empty `appbundle` associated with a placement policy:
 
 ```shell
-kubectl apply -f deploy/ocm/example/appbundle2-empty.yaml
+kubectl apply -f examples/appbundle2-empty.yaml
 ```
 
 We can then apply a deployment associated with this new bundle:
 
 ```shell
-kubectl apply -f deploy/ocm/example/deployment1.yaml 
+kubectl apply -f examples/deployment1.yaml 
 ```
 
 check that pods are NOT created on the virtual cluster:
@@ -305,34 +320,25 @@ appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 ```
 
-## Installing kubadm:
+### HowTo
 
-### Installing on linux
+#### Get kubeconfig from secret
 
-If you are running on linux, you may just download a binary release (note that since kubeadm is only used to generate
-certificates, you do not need to install any of the other prereqs for kubedm)
-
-```shell
-DOWNLOAD_DIR=/usr/local/bin
-sudo mkdir -p $DOWNLOAD_DIR
-RELEASE="$(curl -sSL https://dl.k8s.io/release/stable.txt)"
-ARCH="amd64"
-cd $DOWNLOAD_DIR
-sudo curl -L --remote-name-all https://storage.googleapis.com/kubernetes-release/release/${RELEASE}/bin/linux/${ARCH}/kubeadm
-sudo chmod +x kubeadm
+```
+kubectl get secrets -n <vks-name>-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d
 ```
 
-### Installing on macOS
+#### Get join parameters from configmap
 
-Since there is no official distribution for macOS, you will need to build from source:
-
-```shell
-mkdir -p ${GOPATH}/src/k8s.io
-cd ${GOPATH}/src/k8s.io
-git clone https://github.com/kubernetes/kubernetes.git
-cd kubernetes
-git checkout tags/v1.22.5
-KUBE_BUILD_PLATFORMS=darwin/amd64 build/run.sh make WHAT=cmd/kubeadm
-sudo cp _output/dockerized/bin/darwin/amd64/kubeadm /usr/local/bin
+```
+kubectl get cm -n <vks-name>-system join-command -o jsonpath='{.data.join-cmd}'
 ```
 
+### Listing DBs
+
+use kubectl vh psql and then `\l`
+
+
+### Dropping a DB
+
+use kubectl vh psql and then `DROP DATABASE <db name>;
