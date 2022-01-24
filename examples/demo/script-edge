@@ -28,6 +28,8 @@ function end() {
 }
 trap end SIGINT
 
+clear
+
 pe "podman pod ls"
 pe "systemctl status cymba.service --lines=0"
 pe "systemctl status ocm-registration --lines=0"
