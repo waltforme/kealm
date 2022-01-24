@@ -8,7 +8,7 @@ source ${SCRIPT_DIR}/demo-magic
 
 TYPE_SPEED=30
 #PROMPT_AFTER=1
-DEMO_PROMPT="☸️  cluster1> "
+DEMO_PROMPT="☸️ cluster1> "
 
 function pause() {
   if [[ -n "${NO_WAIT}" ]]; then
@@ -60,9 +60,6 @@ if [ "$kind_cluster_exists" == "false" ]; then
 fi
 
 unset KUBECONFIG
-
-exit
-
 
 # make sure we start with a clean slate
 kubectl config use-context kind-cluster1

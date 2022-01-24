@@ -1,11 +1,14 @@
 #!/bin/bash
 
-source ./config
-source ${DEMO_DIR}/demo-magic
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+HOME_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+
+source ${SCRIPT_DIR}/config
+source ${SCRIPT_DIR}/demo-magic
 
 TYPE_SPEED=30
 #PROMPT_AFTER=1
-DEMO_PROMPT="\U0001F4F3 edge1> "
+DEMO_PROMPT="\U0001F4F3 ${1}> "
 
 function pause() {
   if [[ -n "${NO_WAIT}" ]]; then
@@ -25,64 +28,13 @@ function end() {
 }
 trap end SIGINT
 
-# let's start with a clean slate
-kubectl config use-context edge1 &>/dev/null
-kubectl delete deployments --all &>/dev/null
-podman pod rm --all -f &>/dev/null
-
-if [ "$USE_EDGE2" == "true" ]; then
-  export KUBECONFIG=${KUBECONFIG_EDGE_MERGED} 
-  kubectl config use-context edge2 &>/dev/null
-  kubectl delete deployments --all &>/dev/null
-  ssh ${EDGE2_IP} podman pod rm --all -f &>/dev/null
-  kubectl config use-context edge1 &>/dev/null
-else 
-  export KUBECONFIG=${KUBECONFIG_EDGE1} 
-fi
-
-clear
-
-pe "kubectl get nodes"
-pe "kubectl get deployments"
-pe "podman pod list"
+pe "systemctl status cymba.service"
+pe "systemctl status ocm-registration"
+pe "systemctl status ocm-work"
+pe "podman pod ls"
 
 pause
 
-if [ "$USE_EDGE2" == "true" ]; then
-
-  pe "kubectx edge2"
-  DEMO_PROMPT="\U0001F4F3 edge2> "
-  pe "kubectl get nodes"
-  pe "kubectl get deployments"
-  pe "ssh ${EDGE2_IP} podman pod list"
-
-  pe "sudo iptables-legacy -A  OUTPUT -p tcp -d ${EDGE2_IP} --dport ${EDGE2_PORT} -j REJECT --reject-with icmp-port-unreachable"
-  pe "kubectl get deployments"
-fi 
-
-pause
-
-pe "kubectx edge1"
-DEMO_PROMPT="\U0001F4F3 edge1> "
-pe "kubectl get deployments -o=custom-columns-file=template.txt"
-pe "podman pod list"
-
-if [ "$USE_EDGE2" == "true" ]; then
-  pe "kubectx edge2"
-  DEMO_PROMPT="\U0001F4F3 edge2> "
-  p "ssh ${EDGE2_IP} kubectl get deployments"
-  ssh ${EDGE2_IP} KUBECONFIG=${KUBECONFIG_EDGE1} kubectl get deployments
-  pause
-  pe "sudo iptables-legacy -D OUTPUT 1"
-  pe "watch kubectl get deployments"
-  pe "kubectl get deployments -o=custom-columns-file=template.txt"
-  pe "ssh ${EDGE2_IP} podman pod list"
-fi
-
-while [ "$END" == "false" ]
-do
-  cmd
-done
-
+pe "podman pod ls"
 
 wait

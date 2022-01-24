@@ -1,0 +1,31 @@
+apiVersion: app.open-cluster-management.io/v1alpha1
+kind: AppBundle
+metadata:
+  name: appbundle3
+  labels:
+    cluster.open-cluster-management.io/placement: placement2
+spec:
+  workload:
+    manifests:
+      - apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          namespace: default
+          name: appbundle1-nginx
+          labels:
+            app: appbundle3-nginx
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: appbundle3-nginx
+          template:
+            metadata:
+              labels:
+                app: appbundle3-nginx
+            spec:
+              containers:
+                - name: nginx
+                  image: nginx:1.14.2
+                  ports:
+                    - containerPort: 80

@@ -1,14 +1,14 @@
 apiVersion: cluster.open-cluster-management.io/v1alpha1
 kind: Placement
 metadata:
-  name: placement1
+  name: placement2
   namespace: default
 spec:
   numberOfClusters: 2
   clusterSets:
-    - clusterset1
+    - clusterset2
   predicates:
     - requiredClusterSelector:
         labelSelector:
           matchLabels:
-            location: edge1
+            location: edge2
