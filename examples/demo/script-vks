@@ -10,7 +10,7 @@ source ${SCRIPT_DIR}/demo-magic
 TYPE_SPEED=30
 TYPE_SPEED_BK=$TYPE_SPEED
 #PROMPT_AFTER=1
-DEMO_PROMPT="\☸️ vkshost> "
+DEMO_PROMPT="☸️ vkshost> "
 
 function pause() {
   if [[ -n "${NO_WAIT}" ]]; then
@@ -40,6 +40,7 @@ if [ "$START_CLEAN" == "true" ]; then
   kubectl vh delete vks2 2> /dev/null
   kubectl vh delete vks3 2> /dev/null
   helm delete --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} 2> /dev/null
+  kubectl delete ns vks-system
   kubectl vh delete-kubeconfig vks1
   kubectl vh delete-kubeconfig vks2
   kubectl vh delete-kubeconfig vks3
@@ -55,15 +56,14 @@ if [ "$DELETE_PODMAN_AGENTS" == "true" ]; then
   ${SSH_PODMAN2} podman pod rm --all -f
 fi  
 
-#clear
+clear
 
-#### Demo starts here ####
+##################### Demo starts here #########################
 
 VKS=vks1
-
 pe "kubectl config current-context"
 pe "kubectl get nodes"
-pe "kubectl vh create vks1"
+pe "kubectl vh create ${VKS}"
 pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
 pe "kubectl logs $pod -f"
 pe "kubectl get pods -n ${VKS}-system"
@@ -82,6 +82,7 @@ pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
 TYPE_SPEED=10000
 pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
 TYPE_SPEED=$TYPE_SPEED_BK
+pause
 
 pe "kubectl get csr"
 pe "clusteradm accept --clusters $CLUSTER"
@@ -93,6 +94,7 @@ pe "${SSH_CLUSTERS} kubectl config use-context kind-$CLUSTER"
 TYPE_SPEED=10000
 pe "${SSH_CLUSTERS} clusteradm ${REG_OPTS} $CLUSTER"
 TYPE_SPEED=$TYPE_SPEED_BK
+pause
 
 pe "kubectl get csr"
 pe "clusteradm accept --clusters $CLUSTER"
@@ -126,24 +128,23 @@ pe "kubectl apply -f examples/clusterset2.yaml"
 pe "kubectl apply -f examples/clusterset1-binding.yaml"
 pe "kubectl apply -f examples/clusterset2-binding.yaml"
 
-
 # label all clusters
 CLUSTER=cluster1
 TYPE_SPEED=1000
 pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
-pe "kubectl label managedcluster $CLUSTER  location=edge1"
+pe "kubectl label managedcluster $CLUSTER location=edge1"
 
 CLUSTER=cluster2
 pe "kubectl label managedcluster $CLUSTER cluster.open-cluster-management.io/clusterset=clusterset1"
-pe "kubectl label managedcluster $CLUSTER  location=edge1"
+pe "kubectl label managedcluster $CLUSTER location=edge1"
 
 PODMAN=podman1
 pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
-pe "kubectl label managedcluster $PODMAN  location=edge2"
+pe "kubectl label managedcluster $PODMAN location=edge2"
 
 PODMAN=podman2
 pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
-pe "kubectl label managedcluster $PODMAN  location=edge2"
+pe "kubectl label managedcluster $PODMAN location=edge2"
 
 # show & apply policy
 pe "vim examples/placement1.yaml"
@@ -158,23 +159,42 @@ pe "kubectl apply -f examples/appbundle1.yaml"
 pe "kubectl get manifestworks --all-namespaces"
 
 # TODO - temp hack for bug in appbundle controller
+kubectl config use-context ${VKS_HOST_CTX} &> /dev/null
 kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
 kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
+kubectl config use-context ${VKS} &> /dev/null
 
 # create appbundle2 & deployment
 pe "vim examples/appbundle2-empty.yaml"
 pe "kubectl apply -f examples/appbundle2-empty.yaml"
 pe "vim examples/deployment1.yaml"
 pe "kubectl apply -f examples/deployment1.yaml"
+pause
+pe "kubectl get appbundle appbundle2 -o yaml"
 
 # TODO - temp hack for bug in appbundle controller
+kubectl config use-context ${VKS_HOST_CTX} &> /dev/null
 kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
 kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
+kubectl config use-context ${VKS} &> /dev/null
 
 # create appbundle3
 pe "vim examples/appbundle3.yaml"
 pe "kubectl apply -f examples/appbundle3.yaml"
 pe "kubectl get manifestworks --all-namespaces"
+
+# show can create more virtual hubs
+
+VKS=vks2
+pe "kubectl config use-context ${VKS_HOST_CTX}"
+pe "kubectl vh create ${VKS}"
+pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
+pe "kubectl logs $pod -f"
+pe "kubectl get pods -n ${VKS}-system"
+pe "kubectl vh merge-kubeconfig ${VKS}"
+pe "kubectl config use-context ${VKS}"
+DEMO_PROMPT="☸️  ${VKS}> "
+pe "kubectl get managedclusters"
 
 
 while [ "$END" == "false" ]
