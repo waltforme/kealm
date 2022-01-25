@@ -39,7 +39,7 @@ if [ "$START_CLEAN" == "true" ]; then
   kubectl vh delete vks1 2> /dev/null
   kubectl vh delete vks2 2> /dev/null
   kubectl vh delete vks3 2> /dev/null
-  kubectl delete ns vks-system 2> /dev/null
+  helm delete --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} 2> /dev/null
   kubectl vh delete-kubeconfig vks1
   kubectl vh delete-kubeconfig vks2
   kubectl vh delete-kubeconfig vks3
@@ -51,11 +51,11 @@ if [ "$DELETE_PODMAN_AGENTS" == "true" ]; then
   ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
   export SSH_CMD=${SSH_PODMAN2}
   ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
-  ${SSH_PODMAN1} podman pod rm --all
-  ${SSH_PODMAN2} podman pod rm --all
+  ${SSH_PODMAN1} podman pod rm --all -f
+  ${SSH_PODMAN2} podman pod rm --all -f
 fi  
 
-clear
+#clear
 
 #### Demo starts here ####
 
@@ -102,7 +102,7 @@ pe "kubectl get managedclusters"
 PODMAN=podman1
 export SSH_CMD=${SSH_PODMAN1}
 TYPE_SPEED=10000
-#pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
 TYPE_SPEED=$TYPE_SPEED_BK
 pe "kubectl get csr"
 pe "clusteradm accept --clusters $PODMAN"
@@ -157,11 +157,19 @@ pe "vim examples/appbundle1.yaml"
 pe "kubectl apply -f examples/appbundle1.yaml"
 pe "kubectl get manifestworks --all-namespaces"
 
+# TODO - temp hack for bug in appbundle controller
+kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
+kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
+
 # create appbundle2 & deployment
 pe "vim examples/appbundle2-empty.yaml"
 pe "kubectl apply -f examples/appbundle2-empty.yaml"
 pe "vim examples/deployment1.yaml"
 pe "kubectl apply -f examples/deployment1.yaml"
+
+# TODO - temp hack for bug in appbundle controller
+kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
+kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
 
 # create appbundle3
 pe "vim examples/appbundle3.yaml"

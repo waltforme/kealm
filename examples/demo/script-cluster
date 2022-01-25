@@ -40,7 +40,7 @@ check_kind_cluster_exists() {
 
 create_kind_cluster() {
     KIND_CLUSTER_NAME=$1
-    kind create cluster ${KIND_CLUSTER_NAME} --wait 5m
+    kind create cluster --name ${KIND_CLUSTER_NAME} --wait 5m
 }
 
 if [ "$START_CLEAN" == "true" ]; then
