@@ -2,8 +2,8 @@
 
 Kubernetes at the Edge Application Lifecycle Management. 
 
-At this time this project is a simple PoC based on the [Open Cluster Management](https://open-cluster-management.io) project (OCM). The PoC allows to create `virtual kubernetes` instances, each running a subset of OCM Hub components.
-This allows to easily provision *virtual hub* instances on a kubernetes host.
+At this time this project is a simple PoC based on the [Open Cluster Management](https://open-cluster-management.io) project (OCM). The PoC allows to create *virtual hub* instances, each running a subset of OCM Hub components.
+This allows to easily provision multiple virtual hub instances on a kubernetes host.
 
 ## Prereqs
 
@@ -40,7 +40,7 @@ and results, you may check the logs for the pod started in a job:
 e.g.
 
 ```
-kubectl logs vks1-job-<some id> -f
+kubectl logs -l job-name=vks1-job -f
 ```
 
 After the job completes, you will get a message similar to:
@@ -89,6 +89,12 @@ Please log onto the hub cluster and run the following command:
 
     clusteradm accept --clusters cluster1
 ```    
+
+Switch to the context for your virtual hub host:
+
+```shell
+kubectl config use-context kind-vkshost
+```
 
 Create a new context for your new virtual hub by running:
 

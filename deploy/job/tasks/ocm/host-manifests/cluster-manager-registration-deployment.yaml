@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: hub-registration-controller
-        image: quay.io/open-cluster-management/registration
+        image: quay.io/open-cluster-management/registration:v0.6.0
         imagePullPolicy: Always
         args:
           - "/registration"

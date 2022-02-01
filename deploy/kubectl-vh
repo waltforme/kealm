@@ -1,51 +1,119 @@
 #!/bin/bash
 
 # TODO - configure outside this script
-HOST_IP=172.31.37.22
-EXTERNAL_IP=18.221.76.241
+#HOST_IP=172.31.37.22
+#EXTERNAL_IP=18.221.76.241
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [ "$#" -lt 2 ]; then
+if [ "$#" -lt 2 ] && [ "$1" != "psql" ]; then
     echo "Usage: $(basename $0) create|delete|merge-kubeconfig|delete-kubeconfig|psql <vh name>"
+    echo " env variables: HOST_IP, EXTERNAL_IP"
     exit
 fi
 
 CMD=$1
 name=$2
 
-case $CMD in
+get_current_kubeconfig() {
+  if [ -z ${KUBECONFIG} ]; then
+    echo ${HOME}/.kube/config
+  else
+    echo ${KUBECONFIG}
+  fi   
+}
 
+validate_context() {
+  CTX=$(kubectl config current-context)
+  while true; do
+    read -p "Is your current context \"$CTX\" the VH Host context? [y/n]: " yn
+    case $yn in
+        [Yy]* ) echo "0"; break;;
+        [Nn]* ) echo "-1"; break;;
+        * ) echo "-1";;
+    esac
+done
+}
+
+validate_external_ip() {
+if [ -z "$EXTERNAL_IP" ]; then
+  while true; do
+    read -p "EXTERNAL_IP env variable not set. Do you wish to proceed without an external IP? [y/n]: " yn
+    case $yn in
+        [Yy]* ) echo "0"; break;;
+        [Nn]* ) echo "-1"; break;;
+        * ) echo "-1";;
+    esac
+  done
+else
+  echo "0"
+fi  
+}
+
+validate_ip(){
+case "$OSTYPE" in
+    darwin*)  IP=$(ipconfig getifaddr en0) ;; 
+    linux*)   IP=$(ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p') ;;
+    *)        echo "unknown: $OSTYPE" ;;
+esac  
+if [ -z "$HOST_IP" ]; then
+  while true; do
+      read -p "HOST_IP env var not set, discovered $IP; do you want to use this value? [y/n]: " yn
+      case $yn in
+          [Yy]* ) echo "$IP";  break;;
+          [Nn]* ) echo "-1"; break;;
+          * ) echo "-1";;
+      esac
+  done
+fi
+}
+
+case $CMD in
   create)
-    if [ "$HOST_IP" == "" ]; then
-      echo "HOST_IP must be provided"
-      exit -1
+    HOST_IP="${HOST_IP:-$(validate_ip)}"
+    if [ "$HOST_IP" == -1 ]; then
+      echo "set the env variable for HOST_IP"
+      exit
     fi 
+    rc=$(validate_external_ip)
+    if [ "$rc" != "0" ]; then
+      exit
+    fi  
     if [ "$name" != "vks1" ] && [ "$name" != "vks2" ] && [ "$name" != "vks3" ]; then
       echo "name must be one of {'vks1','vks2','vks3'}"
       exit -1
     fi 
-    echo "creating vh $name"
+    echo "creating vh $name with HOST_IP=$HOST_IP and EXTERNAL_IP=$EXTERNAL_IP"
+    exit
     kubectl apply -f ${SCRIPT_DIR}/job/manifests
     sed "s/{{ .vksName }}/${name}/g; s/{{ .hostIP }}/${HOST_IP}/g; s/{{ .externalIP }}/${EXTERNAL_IP}/g" \
 	  ${SCRIPT_DIR}/job/templates/vksjob.yaml | kubectl apply -f -
     exit
     ;;
   delete)
-    kubectl delete ns ${name}-system
-    kubectl delete job ${name}-job
+    echo "deleting ${name}..."
+    kubectl delete ns ${name}-system &>/dev/null
+    kubectl delete job ${name}-job &>/dev/null
+    kubectl delete pod mypsql-postgresql-client --namespace vks-system &>/dev/null
+    POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)
+    kubectl run mypsql-postgresql-client --rm --tty -i --restart='Never' --namespace vks-system --image docker.io/bitnami/postgresql:11.14.0-debian-10-r28 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- dropdb --host mypsql-postgresql -U postgres -e -p 5432 ${name}
     exit
     ;;
 
   merge-kubeconfig)
-    cp ~/.kube/config ~/.kube/config.bak
+    KC=$(get_current_kubeconfig)
+    rc=$(validate_context)
+    if [ "$rc" != 0 ]; then
+      exit
+    fi  
+    cp ${KC} ${KC}.bak
     kubectl config unset users.${name}-admin &> /dev/null
     kubectl config unset contexts.${name} &> /dev/null
     kubectl config unset clusters.${name} &> /dev/null
     kubectl get secrets -n ${name}-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d > /tmp/${name}
-    KUBECONFIG=~/.kube/config:/tmp/${name} kubectl config view --flatten > /tmp/config
-    mv /tmp/config ~/.kube/config 
-    #rm ~/.kube/config.bak # optionally - remove backup
+    KUBECONFIG=${KC}:/tmp/${name} kubectl config view --flatten > /tmp/config
+    mv /tmp/config ${KC} 
+    rm ${KC}.bak
     exit
     ;;
 

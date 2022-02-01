@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: placement-controller
-        image: quay.io/open-cluster-management/placement
+        image: quay.io/open-cluster-management/placement:v0.3.0
         imagePullPolicy: Always
         args:
           - "/placement"
