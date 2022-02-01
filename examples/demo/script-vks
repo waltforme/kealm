@@ -64,8 +64,8 @@ VKS=vks1
 pe "kubectl config current-context"
 pe "kubectl get nodes"
 pe "kubectl vh create ${VKS}"
-pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
-pe "kubectl logs $pod -f"
+#pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
+#pe "kubectl logs $pod -f"
 pe "kubectl get pods -n ${VKS}-system"
 REG_OPTS=$(kubectl get cm -n vks1-system join-command -o jsonpath='{.data.join-cmd}' | sed -e "s/^\w*\ *//; 1{s/[^ ]\+\s*$//}")
 

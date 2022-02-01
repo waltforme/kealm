@@ -1,0 +1,29 @@
+apiVersion: work.open-cluster-management.io/v1
+kind: ManifestWork
+metadata:
+  name: manifestwork2
+spec:
+  workload:
+    manifests:
+      - apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          namespace: default
+          name: manifestwork2-nginx
+          labels:
+            app: manifestwork2-nginx
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: manifestwork2-nginx
+          template:
+            metadata:
+              labels:
+                app: manifestwork2-nginx
+            spec:
+              containers:
+                - name: nginx
+                  image: nginx:1.14.2
+                  ports:
+                    - containerPort: 80
