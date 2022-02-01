@@ -10,7 +10,7 @@ spec:
       containers:
       - name: vksjob
         image: quay.io/pdettori/vksbuilder:latest
-        imagePullPolicy: Always
+        imagePullPolicy: Never
         env:
           - name: VKS_NAME
             value: {{ .vksName }}

@@ -4,6 +4,7 @@ metadata:
   name: placement1
   namespace: default
 spec:
+  numberOfClusters: 2
   clusterSets:
     - clusterset1
   predicates:
