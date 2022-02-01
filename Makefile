@@ -50,7 +50,7 @@ help: ## Display this help.
 .PHONY: create-cluster
 create-cluster:
 	@sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g; s/{{ .clusterPort1 }}/${KIND_CLUSTER_NODEPORT1}/g; s/{{ .clusterPort2 }}/${KIND_CLUSTER_NODEPORT2}/g; s/{{ .clusterPort3 }}/${KIND_CLUSTER_NODEPORT3}/g" \
-	deploy/vks/manifests/kind-cluster.yaml > ${TMP_DIR}/kind-cluster.yaml
+	deploy/job/tasks/vks/manifests/kind-cluster.yaml > ${TMP_DIR}/kind-cluster.yaml
 	@kind create cluster --config=${TMP_DIR}/kind-cluster.yaml --wait 5m
 	@rm -rf ${TMP_DIR}
 

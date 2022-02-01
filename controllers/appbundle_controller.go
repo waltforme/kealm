@@ -124,10 +124,6 @@ func (r *AppBundleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	klog.Infof("found %+v", placementDec.Status.Decisions)
 
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	// schedule only non-empty bundles
 	if len(bundle.Spec.Workload.Manifests) > 0 {
 		err = r.scheduleBundle(bundle, placementDec)
@@ -184,7 +180,7 @@ func (r *AppBundleReconciler) scheduleBundle(bundle appv1alpha1.AppBundle, decis
 			return err
 		}
 
-		// TODO - should compare specs, labels & annotations to check if uodate is really needed
+		// TODO - should compare specs, labels & annotations to check if update is really needed
 		newManifest := existingManifest.DeepCopy()
 		newManifest.Spec = manifest.Spec
 		newManifest.Labels = manifest.Labels
