@@ -1,6 +1,6 @@
 # kealm
 
-Kubernetes at the Edge Application Lifecycle Management. 
+Kubernetes Edge Application Lifecycle Management. 
 
 At this time this project is a simple PoC based on the [Open Cluster Management](https://open-cluster-management.io) project (OCM). The PoC allows to create *virtual hub* instances, each running a subset of OCM Hub components.
 This allows to easily provision multiple virtual hub instances on a kubernetes host.
@@ -16,13 +16,25 @@ To run the virtual cluster/virtual hub creation script, you will need the follow
 
 ## Creating a virtual cluster
 
+Clone this project:
+
+```shell
+git clone https://github.com/pdettori/kealm.git
+cd kealm
+```
+
 Add the `vh` plugin to your path:
 
 ```shell
 export PATH=$PATH:$(pwd)/deploy
 ```
 
-(tip: you may add this statement to your ~/.bash_profile)
+Tip: you may add this statement to your ~/.bash_profile:
+
+```shell
+echo "export PATH=\$PATH:$(pwd)/deploy" >> ${HOME}/.profile 
+source ${HOME}/.profile
+```
 
 If your host cluster machine has an external IP you may set the `EXTERNAL_IP` env variable to that IP.
 
@@ -58,7 +70,7 @@ cluster manager has been started! To join clusters run the command (make sure to
 clusteradm join --hub-token <token> --hub-apiserver <api-server-url> --cluster-name <cluster-name>
 ```
 
-You may now check the status of the virtual cluster by checking the pods running in the `<virtual hub>-system` namespace:
+You may now check the status of the virtual cluster by checking the pods running in the `<virtual hub name>-system` namespace:
 
 e.g. 
 
@@ -147,7 +159,7 @@ kubectl apply -f examples/clusterset1.yaml
 ```  
 
 `managedclusters` and `clustersets` are cluster-scoped resources, while placement policies
-are namespace-scoped, so in order to apply a policy for a cluster set, we need also
+are namespace-scoped, so in order to apply a policy for a `clusterset`, we need also
 to specify a `clustersetbinding`, which allows now to define policies in the bound 
 `default` namespace. 
 
@@ -179,7 +191,7 @@ NAME                    AGE
 placement1-decision-1   4m40s
 ```
 
-You may also check the selected cluster in the `status` section:
+and:
 
 ```shell
 kubectl describe placementdecision placement1-decision-1
@@ -193,15 +205,15 @@ Status:
     Reason:
 ```
 
-For more details, consult the [Open Cluster Management documentation on placement policies](https://open-cluster-management.io/concepts/placement/) for more details.
+For more details, consult the [Open Cluster Management documentation on placement policies](https://open-cluster-management.io/concepts/placement/).
 
 
 ## Deploying a workload on the managed clusters with ManifestWork
 
 With OCM, you may create custom resources of kind [ManifestWork](https://open-cluster-management.io/concepts/manifestwork/) 
-to wrap a set of resources to deploy on the managed clusters. A `manifestwork` resource is used to deploy a set of resources
-to a single cluster, thus is should be placed on the namespace associated with a managed cluster (which in OCM has the same
-name of the managed cluster).
+to wrap a set of resources to deploy on the managed clusters. A `manifestwork` 
+resource is used to deploy a set of resources to a single cluster, thus it should be placed 
+on the namespace associated with a managed cluster (which in OCM has the same name of the managed cluster).
 
 Check that there is a namespace for `cluster1`:
 
@@ -231,6 +243,7 @@ Switch to cluster1 context:
 ```shell
 kubectl config use-context kind-cluster1
 ```
+
 and check that the resources in the manifestwork have been applied to the cluster:
 
 ```shell
@@ -250,11 +263,11 @@ my-sa     1         20m
 
 ## Deploying a workload on the managed clusters with AppBundle
 
-Manifestwork allows to deploy a workload to a single cluster. To target and deploy to multiple clusters
+A `ManifestWork` allows to deploy a workload to a single cluster. To target and deploy to multiple clusters
 we introduce a new resource: `AppBundle` (Note that `appbundle` is not currently part of OCM, and it is still
-a early stage PoC). AppBundle specs mirror the specs of ManifestWork, but allow to attach a label 
-to identify a placement policy. An appbundle controller then retrieves the placement policy decision for that
-policy and create a manifest work for each targeted cluster and place the manifest work(s) on each targeted 
+an early stage PoC). `AppBundle` specs mirror the specs of `ManifestWork`, but allows to attach a label 
+to bind a placement policy. An `AppBundle` controller then retrieves the placement policy decision for that
+policy, creates a `ManifestWork` for each targeted cluster and places the `ManifestWork`(s) on each targeted 
 cluster namespace. 
 
 Take a look to this example of appbundle:
@@ -272,7 +285,7 @@ kubectl config use-context vks1
 kubectl apply -f examples/appbundle1.yaml 
 ```
 
-Check that a new manifestwork have been created, with the same name of the bundle:
+Check that a new `manifestwork` has been created, with the same name of the bundle:
 
 ```shell
 kubectl get manifestworks -n cluster1
@@ -282,7 +295,7 @@ manifestwork1   23m
 appbundle1      6m
 ```
 
-You may theh check that the new deployment has been deployed to cluster1:
+You may then check that the new deployment has been deployed to cluster1:
 
 ```shell
 kubectl config use-context kind-cluster1
@@ -295,15 +308,15 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          20m
 
 ## Deploying a workload on the managed clusters directly as a deployment
 
-Since we are running a "virtual" hub, that represents a set of clusters, there are actually no
+Since we are running a *virtual* hub, representing a fleet of clusters, there are actually no
 controllers for deployments, pods etc. on the virtual hub (this is a concept that has been 
 lately of great interest on the kubernetes community, see for example the 
 [kcp project](https://github.com/kcp-dev/kcp)). Then we can redefine the behavior of appliying a
-deployment to the "virtual hub" - instead of creating pods on the virtual hub it will
-create pods on the managed clusters that the virtual cluster represents.
+deployment to the *virtual hub* - instead of creating pods on the virtual hub it will
+create pods on the managed clusters.
 
-This model will still use the `appbundle` resource to back the resources applied to the virtual cluster,
-so we will need to create an empty `appbundle` associated with a placement policy:
+This model will still use the `AppBundle` resource to back the resources applied to the virtual hub,
+so we will need to create an empty `AppBundle` associated with a placement policy:
 
 ```shell
 kubectl config use-context vks1
@@ -330,8 +343,7 @@ verify that `appbundle2` includes the new deployment:
 kubectl describe appbundle appbundle2
 ```
 
-Go to the termoinal where kubectl was set to point to the managed cluster and 
-check that the new deployment has been delivered to the managed cluster 
+Verify that the new deployment has been delivered to the managed cluster: 
 
 ```shell
 kubectl config use-context kind-cluster1
@@ -345,23 +357,24 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 
 ### HowTo
 
-#### Get kubeconfig from secret
+#### Get Virtual Hub kubeconfig
 
 ```
-kubectl get secrets -n <vks-name>-system admin-kubeconfig -o jsonpath='{.data.admin\.kubeconfig}' | base64 -d
+kubectl vh print-kubeconfig <vh name>
 ```
 
-#### Get join parameters from configmap
+#### Get Virtual Hub join command
 
 ```
-kubectl get cm -n <vks-name>-system join-command -o jsonpath='{.data.join-cmd}'
+kubectl vh print-join <vh name>
+```
+
+#### Delete Virtual Hub instance
+
+```
+kubectl vh delete <vh name>
 ```
 
 ### Listing DBs
 
 use kubectl vh psql and then `\l`
-
-
-### Dropping a DB
-
-use kubectl vh psql and then `DROP DATABASE <db name>;
