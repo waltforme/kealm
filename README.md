@@ -188,7 +188,8 @@ check that policy produces a `placementdecision` and that it targets the cluster
 
 ```shell
 kubectl get placementdecisions
-
+```
+```
 NAME                    AGE
 placement1-decision-1   4m40s
 ```
@@ -253,7 +254,8 @@ and check that the resources in the manifestwork have been applied to the cluste
 
 ```shell
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          2m
 ```
@@ -319,8 +321,8 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          20m
 Since we are running a *virtual* hub, representing a fleet of clusters, there are actually no
 controllers for deployments, pods etc. on the virtual hub (this is a concept that has been 
 lately of great interest on the kubernetes community, see for example the 
-[kcp project](https://github.com/kcp-dev/kcp)). Then we can redefine the behavior of appliying a
-deployment to the *virtual hub* - instead of creating pods on the virtual hub it will
+[kcp project](https://github.com/kcp-dev/kcp)). Then we can redefine the behavior of applying a
+deployment to the *virtual hub* - instead of creating pods on the virtual hub, it will
 create pods on the managed clusters.
 
 This model will still use the `AppBundle` resource to back the resources applied to the virtual hub,
