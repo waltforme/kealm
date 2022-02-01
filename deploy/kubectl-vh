@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# TODO - configure outside this script
-#HOST_IP=172.31.37.22
-#EXTERNAL_IP=18.221.76.241
-
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ "$#" -lt 2 ] && [ "$1" != "psql" ]; then
