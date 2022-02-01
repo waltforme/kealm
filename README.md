@@ -10,36 +10,42 @@ This allows to easily provision multiple virtual hub instances on a kubernetes h
 To run the virtual cluster/virtual hub creation script, you will need the following:
 
 - docker
-- kind
+- KinD
 - kubectl
+- [clusteradm](https://github.com/open-cluster-management-io/clusteradm/releases)
 
 ## Creating a virtual cluster
 
 Add the `vh` plugin to your path:
 
-```
+```shell
 export PATH=$PATH:$(pwd)/deploy
 ```
 
 (tip: you may add this statement to your ~/.bash_profile)
 
+If your host cluster machine has an external IP you may set the `EXTERNAL_IP` env variable to that IP.
 
-Edit the file deploy/kubectl-vh and set the `HOST_IP` and `EXTERNAL_IP` for the IP of your host; if you don't have an
-external IP set that variable to empty.
+Create a kubernetes host to host the virtual hubs:
 
-
-To create a new virtual hub, run the command:
-
+```shell
+make create-cluster
 ```
+
+Note: The current script to create virtual hubs has been tested on KinD; since the script assume the availability
+of specific node ports, you have to use the supplied make command to create it.
+
+
+To create a new virtual hub named *vks1*, run the command:
+
+```shell
 kubectl vh create vks1
 ```
 
 this will create a virtual hub instance named 'vks1' in a kind cluster. To check the progress
 and results, you may check the logs for the pod started in a job:
 
-e.g.
-
-```
+```shell
 kubectl logs -l job-name=vks1-job -f
 ```
 
@@ -98,13 +104,13 @@ kubectl config use-context kind-vkshost
 
 Create a new context for your new virtual hub by running:
 
-```
+```shell
 kubectl vh merge-kubeconfig vks1
 ```
 
 Then switch to the new virtual hub context:
 
-```
+```shell
 kubectl config use-context vks1
 ```
 
