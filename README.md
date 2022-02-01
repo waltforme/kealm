@@ -75,7 +75,8 @@ e.g.
 
 ```shell
 kubectl get pods -n vks1-system
-
+```
+```
 NAME                                                       READY   STATUS    RESTARTS   AGE
 cluster-manager-extensions-54b758b6d5-qx86t                1/1     Running   0          3h24m
 cluster-manager-placement-controller-b9b8b4f67-b6t5q       1/1     Running   0          3h24m
@@ -129,7 +130,8 @@ You should see a certificate signing request pending:
 
 ```shell
 kubectl get csr
-
+```
+```
 NAME             AGE     SIGNERNAME                            REQUESTOR                                                         REQUESTEDDURATION   CONDITION
 cluster1-2b8hp   4m20s   kubernetes.io/kube-apiserver-client   system:serviceaccount:open-cluster-management:cluster-bootstrap   <none>              Pending
 ```
@@ -144,7 +146,8 @@ Verify that the new cluster is joined and available:
 
 ```shell
 kubectl get managedclusters
-
+```
+```
 NAME       HUB ACCEPTED   MANAGED CLUSTER URLS          JOINED   AVAILABLE   AGE
 cluster1   true           https://192.168.1.153:31433   True     True        4m43s
 ```
@@ -194,7 +197,8 @@ and:
 
 ```shell
 kubectl describe placementdecision placement1-decision-1
-
+```
+```
 Name:         placement1-decision-1
 Namespace:    default
 ...
@@ -218,6 +222,8 @@ Check that there is a namespace for `cluster1`:
 
 ```shell
 kubectl get ns
+```
+```
 NAME                          STATUS   AGE
 kube-system                   Active   15h
 ...
@@ -254,7 +260,8 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          2m
 
 ```shell
 kubectl get sa
-
+```
+```
 NAME      SECRETS   AGE
 default   1         15h
 my-sa     1         20m
@@ -288,7 +295,8 @@ Check that a new `manifestwork` has been created, with the same name of the bund
 
 ```shell
 kubectl get manifestworks -n cluster1
-
+```
+```
 NAME            AGE
 manifestwork1   23m
 appbundle1      6m
@@ -299,7 +307,8 @@ You may then check that the new deployment has been deployed to cluster1:
 ```shell
 kubectl config use-context kind-cluster1
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 appbundle1-nginx-54cc7fdb98-9qdnl      1/1     Running   0          2m59s
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          20m
@@ -332,7 +341,8 @@ check that pods are NOT created on the virtual cluster:
 
 ```shell
 kubectl get pods 
-
+```
+```
 No resources found in default namespace.
 ```
 
@@ -347,7 +357,8 @@ Verify that the new deployment has been delivered to the managed cluster:
 ```shell
 kubectl config use-context kind-cluster1
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 appbundle1-nginx-54cc7fdb98-9qdnl      1/1     Running   0          59m
 appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
@@ -358,22 +369,26 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 
 #### Get Virtual Hub kubeconfig
 
-```
+```shell
 kubectl vh print-kubeconfig <vh name>
 ```
 
 #### Get Virtual Hub join command
 
-```
+```shell
 kubectl vh print-join <vh name>
 ```
 
 #### Delete Virtual Hub instance
 
-```
+```shell
 kubectl vh delete <vh name>
 ```
 
 ### Listing DBs
 
-use kubectl vh psql and then `\l`
+```shell
+kubectl vh psql
+```
+
+then type `\l`
