@@ -38,14 +38,13 @@ source ${HOME}/.profile
 
 If your host cluster machine has an external IP you may set the `EXTERNAL_IP` env variable to that IP.
 
-Create a kubernetes host to host the virtual hubs:
+Create a kubernetes host to run the virtual hubs:
 
 ```shell
 make create-cluster
 ```
 
-Note: The current script to create virtual hubs has been tested on KinD; since the script assume the availability
-of specific node ports, you have to use the supplied make command to create it.
+Note: The current script to create virtual hubs has been tested on KinD; since the script assume the availability of specific node ports, you have to use the supplied make command to create it.
 
 
 To create a new virtual hub named *vks1*, run the command:
@@ -54,7 +53,7 @@ To create a new virtual hub named *vks1*, run the command:
 kubectl vh create vks1
 ```
 
-this will create a virtual hub instance named 'vks1' in a kind cluster. To check the progress
+this will create a virtual hub instance named *vks1* in a kind cluster. To check the progress
 and results, you may check the logs for the pod started in a job:
 
 ```shell
