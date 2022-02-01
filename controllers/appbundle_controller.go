@@ -216,8 +216,7 @@ func (r *AppBundleReconciler) deleteAllChildManifests(bundle *appv1alpha1.AppBun
 	req, _ := labels.NewRequirement(OwnedLabel, selection.Equals, []string{string(bundle.UID)})
 	selector := labels.NewSelector()
 	selector = selector.Add(*req)
-	mList := &workapiv1.ManifestWorkList{}
-	mList, err := r.WorkClient.WorkV1().ManifestWorks("").List(context.TODO(), v1.ListOptions{})
+	mList, err := r.WorkClient.WorkV1().ManifestWorks("").List(context.TODO(), v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return err
 	}
