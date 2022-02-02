@@ -38,14 +38,13 @@ source ${HOME}/.profile
 
 If your host cluster machine has an external IP you may set the `EXTERNAL_IP` env variable to that IP.
 
-Create a kubernetes host to host the virtual hubs:
+Create a kubernetes host to run the virtual hubs:
 
 ```shell
 make create-cluster
 ```
 
-Note: The current script to create virtual hubs has been tested on KinD; since the script assume the availability
-of specific node ports, you have to use the supplied make command to create it.
+Note: The current script to create virtual hubs has been tested on KinD; since the script assume the availability of specific node ports, you have to use the supplied make command to create it.
 
 
 To create a new virtual hub named *vks1*, run the command:
@@ -54,7 +53,7 @@ To create a new virtual hub named *vks1*, run the command:
 kubectl vh create vks1
 ```
 
-this will create a virtual hub instance named 'vks1' in a kind cluster. To check the progress
+this will create a virtual hub instance named *vks1* in a kind cluster. To check the progress
 and results, you may check the logs for the pod started in a job:
 
 ```shell
@@ -76,7 +75,8 @@ e.g.
 
 ```shell
 kubectl get pods -n vks1-system
-
+```
+```
 NAME                                                       READY   STATUS    RESTARTS   AGE
 cluster-manager-extensions-54b758b6d5-qx86t                1/1     Running   0          3h24m
 cluster-manager-placement-controller-b9b8b4f67-b6t5q       1/1     Running   0          3h24m
@@ -130,7 +130,8 @@ You should see a certificate signing request pending:
 
 ```shell
 kubectl get csr
-
+```
+```
 NAME             AGE     SIGNERNAME                            REQUESTOR                                                         REQUESTEDDURATION   CONDITION
 cluster1-2b8hp   4m20s   kubernetes.io/kube-apiserver-client   system:serviceaccount:open-cluster-management:cluster-bootstrap   <none>              Pending
 ```
@@ -145,7 +146,8 @@ Verify that the new cluster is joined and available:
 
 ```shell
 kubectl get managedclusters
-
+```
+```
 NAME       HUB ACCEPTED   MANAGED CLUSTER URLS          JOINED   AVAILABLE   AGE
 cluster1   true           https://192.168.1.153:31433   True     True        4m43s
 ```
@@ -186,7 +188,8 @@ check that policy produces a `placementdecision` and that it targets the cluster
 
 ```shell
 kubectl get placementdecisions
-
+```
+```
 NAME                    AGE
 placement1-decision-1   4m40s
 ```
@@ -195,7 +198,8 @@ and:
 
 ```shell
 kubectl describe placementdecision placement1-decision-1
-
+```
+```
 Name:         placement1-decision-1
 Namespace:    default
 ...
@@ -219,6 +223,8 @@ Check that there is a namespace for `cluster1`:
 
 ```shell
 kubectl get ns
+```
+```
 NAME                          STATUS   AGE
 kube-system                   Active   15h
 ...
@@ -248,14 +254,16 @@ and check that the resources in the manifestwork have been applied to the cluste
 
 ```shell
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          2m
 ```
 
 ```shell
 kubectl get sa
-
+```
+```
 NAME      SECRETS   AGE
 default   1         15h
 my-sa     1         20m
@@ -289,7 +297,8 @@ Check that a new `manifestwork` has been created, with the same name of the bund
 
 ```shell
 kubectl get manifestworks -n cluster1
-
+```
+```
 NAME            AGE
 manifestwork1   23m
 appbundle1      6m
@@ -300,7 +309,8 @@ You may then check that the new deployment has been deployed to cluster1:
 ```shell
 kubectl config use-context kind-cluster1
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 appbundle1-nginx-54cc7fdb98-9qdnl      1/1     Running   0          2m59s
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          20m
@@ -311,8 +321,8 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          20m
 Since we are running a *virtual* hub, representing a fleet of clusters, there are actually no
 controllers for deployments, pods etc. on the virtual hub (this is a concept that has been 
 lately of great interest on the kubernetes community, see for example the 
-[kcp project](https://github.com/kcp-dev/kcp)). Then we can redefine the behavior of appliying a
-deployment to the *virtual hub* - instead of creating pods on the virtual hub it will
+[kcp project](https://github.com/kcp-dev/kcp)). Then we can redefine the behavior of applying a
+deployment to the *virtual hub* - instead of creating pods on the virtual hub, it will
 create pods on the managed clusters.
 
 This model will still use the `AppBundle` resource to back the resources applied to the virtual hub,
@@ -333,7 +343,8 @@ check that pods are NOT created on the virtual cluster:
 
 ```shell
 kubectl get pods 
-
+```
+```
 No resources found in default namespace.
 ```
 
@@ -348,7 +359,8 @@ Verify that the new deployment has been delivered to the managed cluster:
 ```shell
 kubectl config use-context kind-cluster1
 kubectl get pods
-
+```
+```
 NAME                                   READY   STATUS    RESTARTS   AGE
 appbundle1-nginx-54cc7fdb98-9qdnl      1/1     Running   0          59m
 appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
@@ -359,22 +371,26 @@ manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 
 #### Get Virtual Hub kubeconfig
 
-```
+```shell
 kubectl vh print-kubeconfig <vh name>
 ```
 
 #### Get Virtual Hub join command
 
-```
+```shell
 kubectl vh print-join <vh name>
 ```
 
 #### Delete Virtual Hub instance
 
-```
+```shell
 kubectl vh delete <vh name>
 ```
 
 ### Listing DBs
 
-use kubectl vh psql and then `\l`
+```shell
+kubectl vh psql
+```
+
+then type `\l`

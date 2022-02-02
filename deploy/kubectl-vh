@@ -80,7 +80,6 @@ case $CMD in
       exit -1
     fi 
     echo "creating vh $name with HOST_IP=$HOST_IP and EXTERNAL_IP=$EXTERNAL_IP"
-    exit
     kubectl apply -f ${SCRIPT_DIR}/job/manifests
     sed "s/{{ .vksName }}/${name}/g; s/{{ .hostIP }}/${HOST_IP}/g; s/{{ .externalIP }}/${EXTERNAL_IP}/g" \
 	  ${SCRIPT_DIR}/job/templates/vksjob.yaml | kubectl apply -f -
