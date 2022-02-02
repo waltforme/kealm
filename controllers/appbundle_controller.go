@@ -170,14 +170,18 @@ func (r *AppBundleReconciler) scheduleBundle(bundle appv1alpha1.AppBundle, decis
 		klog.Infof("Generating manifest for cluster %s", dec.ClusterName)
 		manifest := generateManifest(bundle, dec.ClusterName)
 
-		klog.Infof("Applying manifest for cluster %s", dec.ClusterName)
-
 		existingManifest, err := r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Get(context.TODO(), manifest.Name, v1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
+				klog.Infof("Creating manifest for cluster %s", dec.ClusterName)
 				_, err = r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Create(context.TODO(), manifest, v1.CreateOptions{})
+				if err != nil {
+					return err
+				}
+				continue
+			} else {
+				return err
 			}
-			return err
 		}
 
 		// TODO - should compare specs, labels & annotations to check if update is really needed
@@ -185,6 +189,7 @@ func (r *AppBundleReconciler) scheduleBundle(bundle appv1alpha1.AppBundle, decis
 		newManifest.Spec = manifest.Spec
 		newManifest.Labels = manifest.Labels
 		newManifest.Annotations = manifest.Annotations
+		klog.Infof("Updating manifest for cluster %s", dec.ClusterName)
 		_, err = r.WorkClient.WorkV1().ManifestWorks(dec.ClusterName).Update(context.TODO(), newManifest, v1.UpdateOptions{})
 		if err != nil {
 			return err
