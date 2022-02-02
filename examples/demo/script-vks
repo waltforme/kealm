@@ -37,12 +37,10 @@ export PATH=$PATH:$(pwd)/deploy
 if [ "$START_CLEAN" == "true" ]; then
   echo "start clean !"
   kubectl vh delete vks1 2> /dev/null
-  kubectl vh delete vks2 2> /dev/null
+  #kubectl vh delete vks2 2> /dev/null
   kubectl vh delete vks3 2> /dev/null
-  helm delete --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} 2> /dev/null
-  kubectl delete ns vks-system
   kubectl vh delete-kubeconfig vks1
-  kubectl vh delete-kubeconfig vks2
+  #kubectl vh delete-kubeconfig vks2
   kubectl vh delete-kubeconfig vks3
 fi
 

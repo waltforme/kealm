@@ -1,6 +1,7 @@
 #!/bin/bash
 # Config the env variables for the demo
 
+export EXTERNAL_IP=18.221.76.241
 VKS_HOST_CTX=kind-vkshost
 START_CLEAN="${START_CLEAN:-false}"
 DELETE_PODMAN_AGENTS="${DELETE_PODMAN_AGENTS:-false}"
