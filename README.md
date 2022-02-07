@@ -363,21 +363,21 @@ appbundle2-nginx-5d976d46f5-w7phc      1/1     Running   0          3m41s
 manifestwork1-nginx-58dc65cd95-bqkk8   1/1     Running   0          76m
 ```
 
-### HowTo
+## HowTo
 
-#### Get Virtual Hub kubeconfig
+### Get Virtual Hub kubeconfig
 
 ```shell
 kubectl vh print-kubeconfig <vh name>
 ```
 
-#### Get Virtual Hub join command
+### Get Virtual Hub join command
 
 ```shell
 kubectl vh print-join <vh name>
 ```
 
-#### Delete Virtual Hub instance
+### Delete Virtual Hub instance
 
 ```shell
 kubectl vh delete <vh name>
