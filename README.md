@@ -83,7 +83,6 @@ cluster-manager-placement-controller-b9b8b4f67-b6t5q       1/1     Running   0  
 cluster-manager-registration-controller-6769f48c79-vwlqg   1/1     Running   0          3h24m
 kube-apiserver-6b75c996d8-fh5zx                            2/2     Running   3          3h25m
 kube-controller-manager-58b46767b8-4jskt                   1/1     Running   2          3h24m
-mypsql-postgresql-0                                        1/1     Running   0          3h25m
 ```
 
 Define the context for the new virtual hub by running:
