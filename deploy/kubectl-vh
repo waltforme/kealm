@@ -127,7 +127,7 @@ case $CMD in
     ;;
   psql)
     kubectl delete pod mypsql-postgresql-client --namespace vks-system &>/dev/null
-    POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)
+    POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
     kubectl run mypsql-postgresql-client --rm --tty -i --restart='Never' --namespace vks-system --image docker.io/bitnami/postgresql:11.14.0-debian-10-r28 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- psql --host mypsql-postgresql -U postgres -d postgres -p 5432
     exit
     ;;    
