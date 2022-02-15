@@ -117,12 +117,12 @@ install_db() {
         return
     fi    
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} bitnami/postgresql
+    helm install --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} bitnami/postgresql --version ${POSTGRES_CHART_VERSION} 
 }
 
 get_db_password() {
     DB_PASSWORD=$(kubectl get secret --namespace ${VKSDB_NS} ${DB_RELEASE_NAME}-postgresql \
-        -o jsonpath="{.data.postgresql-password}" | base64 --decode)
+        -o jsonpath="{.data.postgres-password}" | base64 --decode)
     echo ${DB_PASSWORD}   
 }
 

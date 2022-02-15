@@ -15,4 +15,16 @@ nodes:
   - containerPort: {{ .clusterPort3 }}
     hostPort: {{ .clusterPort3 }}
     listenAddress: "0.0.0.0" 
-    protocol: tcp    
+    protocol: tcp
+  - containerPort: {{ .clusterPort4 }}
+    hostPort: {{ .clusterPort4 }}
+    listenAddress: "0.0.0.0" 
+    protocol: tcp
+  - containerPort: {{ .clusterPort5 }}
+    hostPort: {{ .clusterPort5 }}
+    listenAddress: "0.0.0.0" 
+    protocol: tcp
+  - containerPort: {{ .clusterPort6 }}
+    hostPort: {{ .clusterPort6 }}
+    listenAddress: "0.0.0.0" 
+    protocol: tcp          

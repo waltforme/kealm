@@ -389,3 +389,13 @@ kubectl vh psql
 ```
 
 then type `\l`
+
+### Hacking flotta
+
+Install CRDs
+
+```
+kubectl apply -f config/crd/bases/management.project-flotta.io_edgedevices.yaml 
+kubectl apply -f config/crd/bases/management.project-flotta.io_edgedeployments.yaml 
+```
+

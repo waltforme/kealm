@@ -1,0 +1,15 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: flotta-operator-manager-config
+  namespace: flotta
+data:
+  EDGEDEPLOYMENT_CONCURRENCY: "5"
+  HTTP_PORT: "8888"
+  LEADER_ELECT: "false"
+  LOG_LEVEL: info
+  MAX_CONCURRENT_RECONCILES: "3"
+  METRICS_ADDR: :8080
+  OBC_AUTO_CREATE: "false"
+  PROBE_ADDR: :8081
+  WEBHOOK_PORT: "9443"

@@ -29,3 +29,8 @@ done
 ${SCRIPT_DIR}/vks/create-vks.sh --host-ip=${CLUSTER_IP} --external-ip=${externalIP}
 
 ${SCRIPT_DIR}/ocm/deploy-cluster-manager.sh --host-ip=${CLUSTER_IP} --external-ip=${externalIP}
+
+if [ "$DEPLOY_FLOTTA" == "true" ]; then
+  echo "deploying flotta..." 
+  ${SCRIPT_DIR}/flotta/deploy-flotta.sh --host-ip=${CLUSTER_IP} --external-ip=${externalIP}
+fi

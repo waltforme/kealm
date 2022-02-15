@@ -1,0 +1,103 @@
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: flotta-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedevices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedevices/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - management.project-flotta.io
+  resources:
+  - edgedevices/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - objectbucket.io
+  resources:
+  - objectbucketclaims
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  verbs:
+  - get
+  - list
+  - watch

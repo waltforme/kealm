@@ -9,6 +9,9 @@ KIND_CLUSTER_NAME ?= vkshost
 KIND_CLUSTER_NODEPORT1 ?= 31433
 KIND_CLUSTER_NODEPORT2 ?= 31434
 KIND_CLUSTER_NODEPORT3 ?= 31435
+KIND_CLUSTER_NODEPORT4 ?= 31436
+KIND_CLUSTER_NODEPORT5 ?= 31437
+KIND_CLUSTER_NODEPORT6 ?= 31438
 unexport KUBECONFIG
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -49,7 +52,7 @@ help: ## Display this help.
 ##@ Setup
 .PHONY: create-cluster
 create-cluster:
-	@sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g; s/{{ .clusterPort1 }}/${KIND_CLUSTER_NODEPORT1}/g; s/{{ .clusterPort2 }}/${KIND_CLUSTER_NODEPORT2}/g; s/{{ .clusterPort3 }}/${KIND_CLUSTER_NODEPORT3}/g" \
+	@sed "s/{{ .clusterName }}/${KIND_CLUSTER_NAME}/g; s/{{ .clusterPort1 }}/${KIND_CLUSTER_NODEPORT1}/g; s/{{ .clusterPort2 }}/${KIND_CLUSTER_NODEPORT2}/g; s/{{ .clusterPort3 }}/${KIND_CLUSTER_NODEPORT3}/g; s/{{ .clusterPort4 }}/${KIND_CLUSTER_NODEPORT4}/g; s/{{ .clusterPort5 }}/${KIND_CLUSTER_NODEPORT5}/g; s/{{ .clusterPort6 }}/${KIND_CLUSTER_NODEPORT6}/g" \
 	deploy/job/tasks/vks/manifests/kind-cluster.yaml > ${TMP_DIR}/kind-cluster.yaml
 	@kind create cluster --config=${TMP_DIR}/kind-cluster.yaml --wait 5m
 	@rm -rf ${TMP_DIR}

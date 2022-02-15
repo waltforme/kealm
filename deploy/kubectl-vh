@@ -2,9 +2,11 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+DEPLOY_FLOTTA="${DEPLOY_FLOTTA:-false}"
+
 if [ "$#" -lt 2 ] && [ "$1" != "psql" ]; then
     echo "Usage: $(basename $0) create|delete|print-join|merge-kubeconfig|delete-kubeconfig|print-kubeconfig|psql <vh name>"
-    echo " env variables: HOST_IP, EXTERNAL_IP"
+    echo " env variables: HOST_IP, EXTERNAL_IP, DEPLOY_FLOTTA"
     exit
 fi
 
@@ -79,9 +81,9 @@ case $CMD in
       echo "name must be one of {'vks1','vks2','vks3'}"
       exit -1
     fi 
-    echo "creating vh $name with HOST_IP=$HOST_IP and EXTERNAL_IP=$EXTERNAL_IP"
+    echo "creating vh $name with HOST_IP=$HOST_IP, EXTERNAL_IP=$EXTERNAL_IP and DEPLOY_FLOTTA=$DEPLOY_FLOTTA"
     kubectl apply -f ${SCRIPT_DIR}/job/manifests
-    sed "s/{{ .vksName }}/${name}/g; s/{{ .hostIP }}/${HOST_IP}/g; s/{{ .externalIP }}/${EXTERNAL_IP}/g" \
+    sed "s/{{ .vksName }}/${name}/g; s/{{ .hostIP }}/${HOST_IP}/g; s/{{ .externalIP }}/${EXTERNAL_IP}/g; s/{{ .deployFlotta }}/${DEPLOY_FLOTTA}/g" \
 	  ${SCRIPT_DIR}/job/templates/vksjob.yaml | kubectl apply -f -
     exit
     ;;
@@ -90,7 +92,7 @@ case $CMD in
     kubectl delete ns ${name}-system &>/dev/null
     kubectl delete job ${name}-job &>/dev/null
     kubectl delete pod mypsql-postgresql-client --namespace vks-system &>/dev/null
-    POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)
+    POSTGRES_PASSWORD=$(kubectl get secret --namespace vks-system mypsql-postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
     kubectl run mypsql-postgresql-client --rm --tty -i --restart='Never' --namespace vks-system --image docker.io/bitnami/postgresql:11.14.0-debian-10-r28 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- dropdb --host mypsql-postgresql -U postgres -e -p 5432 ${name}
     exit
     ;;
