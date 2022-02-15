@@ -2,7 +2,6 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: flotta-operator-manager-config
-  namespace: vks1-system
 data:
   EDGEDEPLOYMENT_CONCURRENCY: "5"
   HTTP_PORT: "8888"

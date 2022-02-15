@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: flotta-role
 subjects:
-- kind: ServiceAccount
-  name: default
-  namespace: {{ .namespace }}
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:kube-controller-manager
