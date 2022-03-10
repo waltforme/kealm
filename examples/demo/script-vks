@@ -3,6 +3,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 HOME_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 CYMBA_DIR=${HOME_DIR}/../cymba
+FLOTTA_AGENT_DIR=${HOME_DIR}/../flotta-device-worker
 
 source ${SCRIPT_DIR}/config
 source ${SCRIPT_DIR}/demo-magic
@@ -37,10 +38,10 @@ export PATH=$PATH:$(pwd)/deploy
 if [ "$START_CLEAN" == "true" ]; then
   echo "start clean !"
   kubectl vh delete vks1 2> /dev/null
-  #kubectl vh delete vks2 2> /dev/null
+  kubectl vh delete vks2 2> /dev/null
   kubectl vh delete vks3 2> /dev/null
   kubectl vh delete-kubeconfig vks1
-  #kubectl vh delete-kubeconfig vks2
+  kubectl vh delete-kubeconfig vks2
   kubectl vh delete-kubeconfig vks3
 fi
 
@@ -50,6 +51,7 @@ if [ "$DELETE_PODMAN_AGENTS" == "true" ]; then
   ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
   export SSH_CMD=${SSH_PODMAN2}
   ${CYMBA_DIR}/deploy/delete-agent.sh 2>/dev/null
+  ${FLOTTA_AGENT_DIR}/deploy/delete-agent.sh 2>/dev/null
   ${SSH_PODMAN1} podman pod rm --all -f
   ${SSH_PODMAN2} podman pod rm --all -f
 fi  
@@ -62,8 +64,8 @@ VKS=vks1
 pe "kubectl config current-context"
 pe "kubectl get nodes"
 pe "kubectl vh create ${VKS}"
-#pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
-#pe "kubectl logs $pod -f"
+pod=$(kubectl get pods -l job-name=${VKS}-job --no-headers -o custom-columns=":metadata.name")
+pe "kubectl logs $pod -f"
 pe "kubectl get pods -n ${VKS}-system"
 REG_OPTS=$(kubectl get cm -n ${VKS}-system join-command -o jsonpath='{.data.join-cmd}' | sed -e "s/^\w*\ *//; 1{s/[^ ]\+\s*$//}")
 
@@ -112,11 +114,10 @@ pe "kubectl get managedclusters"
 PODMAN=podman2
 export SSH_CMD=${SSH_PODMAN2}
 TYPE_SPEED=10000
-pe "${CYMBA_DIR}/deploy/deploy-agent.sh ${REG_OPTS} ${PODMAN}"
+# TODO - build cm in vh and read it to create reg command
+pe " ${FLOTTA_AGENT_DIR}/deploy/deploy-agent.sh join --hub-apiserver 18.221.76.241:31435"
 TYPE_SPEED=$TYPE_SPEED_BK
-pe "kubectl get csr"
-pe "clusteradm accept --clusters $PODMAN"
-pe "kubectl get managedclusters"
+pe "kubectl get edgedevices"
 
 # create clustersets
 pe "kubectl apply -f examples/clusterset1.yaml"
@@ -141,8 +142,8 @@ pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clus
 pe "kubectl label managedcluster $PODMAN location=edge2"
 
 PODMAN=podman2
-pe "kubectl label managedcluster $PODMAN cluster.open-cluster-management.io/clusterset=clusterset2"
-pe "kubectl label managedcluster $PODMAN location=edge2"
+EDGE_DEV_NAME=$(kubectl get edgedevices -o jsonpath='{.items[0].metadata.name}')
+pe "kubectl label edgedevice $EDGE_DEV_NAME location=edge2"
 
 # show & apply policy
 pe "vim examples/placement1.yaml"
@@ -156,12 +157,6 @@ pe "vim examples/appbundle1.yaml"
 pe "kubectl apply -f examples/appbundle1.yaml"
 pe "kubectl get manifestworks --all-namespaces"
 
-# TODO - temp hack for bug in appbundle controller
-kubectl config use-context ${VKS_HOST_CTX} &> /dev/null
-kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
-kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
-kubectl config use-context ${VKS} &> /dev/null
-
 # create appbundle2 & deployment
 pe "vim examples/appbundle2-empty.yaml"
 pe "kubectl apply -f examples/appbundle2-empty.yaml"
@@ -170,16 +165,14 @@ pe "kubectl apply -f examples/deployment1.yaml"
 pause
 pe "kubectl get appbundle appbundle2 -o yaml"
 
-# TODO - temp hack for bug in appbundle controller
-kubectl config use-context ${VKS_HOST_CTX} &> /dev/null
-kubectl scale deploy -n vks1-system --replicas=0 cluster-manager-extensions &> /dev/null
-kubectl scale deploy -n vks1-system --replicas=1 cluster-manager-extensions &> /dev/null
-kubectl config use-context ${VKS} &> /dev/null
-
 # create appbundle3
 pe "vim examples/appbundle3.yaml"
 pe "kubectl apply -f examples/appbundle3.yaml"
 pe "kubectl get manifestworks --all-namespaces"
+
+# create edgedeployment
+pe "vim examples/edgedeployment1.yaml"
+pe "kubectl apply -f examples/edgedeployment1.yaml"
 
 # show can create more virtual hubs
 

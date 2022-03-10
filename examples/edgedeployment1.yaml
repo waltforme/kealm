@@ -1,0 +1,22 @@
+apiVersion: management.project-flotta.io/v1alpha1
+kind: EdgeDeployment
+metadata:
+  name: edgedeployment1
+spec:
+  deviceSelector:
+    matchLabels:
+      location: edge2
+  data:
+    paths:
+      - source: .
+        target: nginx
+  type: pod
+  pod:
+    spec:
+      containers:
+        - name: nginx
+          image: docker.io/nginx:1.14.2
+          ports:
+            - containerPort: 80
+              hostPort: 9090
+
