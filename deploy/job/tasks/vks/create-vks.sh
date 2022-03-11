@@ -72,6 +72,15 @@ get_host_ip()
   fi
 }
 
+check_is_ocp() {
+  kubectl get routes.route.openshift.io > /dev/null
+  if [ "$?" -eq 0 ]; then
+    echo "true"
+  else
+    echo "false"
+  fi    
+}
+
 create_certs() {
     IP=$1
     if [ -z "$2" ]; then
@@ -159,9 +168,20 @@ configure_manifests() {
         s/{{ .securePort }}/${API_SERVER_PORT}/g; \
         s/{{ .clusterPort }}/${KIND_CLUSTER_NODEPORT}/g" > ${VKS_HOME}/manifests/kube-apiserver-service.yaml
 
+    cat ${SCRIPT_DIR}/manifests/kube-apiserver-route.yaml | \
+        sed "s/{{ .vksName }}/${VKS_NAME}/g" > ${VKS_HOME}/manifests/kube-apiserver-route.yaml    
+
     cat ${SCRIPT_DIR}/manifests/kube-controller-manager.yaml | \
         sed "s/{{ .vksName }}/${VKS_NAME}/g; \
         s/{{ .securePort }}/${API_SERVER_PORT}/g" > ${VKS_HOME}/manifests/kube-controller-manager.yaml
+}
+
+create_ocp_route() {
+  kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-apiserver-route.yaml 
+}
+
+get_ocp_route_host() {
+  kubectl get route ${VKS_NAME} -n ${VKS_NS} -o jsonpath='{.spec.host}'
 }
 
 apply_manifests() {
@@ -216,7 +236,13 @@ create_kubeconfig_secret() {
         echo "using external IP ${IP} for kubeconfig_secret"
     fi    
     CURRENT_SERVER=$(cat ${VKS_HOME}/admin.conf | grep server: | awk '{print $2}')
-    sed "s|${CURRENT_SERVER}|https://${IP}:${KIND_CLUSTER_NODEPORT}|g; \
+    is_ocp=$(check_is_ocp)
+    if [ "$is_ocp" == "true" ]; then
+       SERVER=https://${IP}
+    else
+       SERVER=https://${IP}:${KIND_CLUSTER_NODEPORT}
+    fi   
+    sed "s|${CURRENT_SERVER}|${SERVER}|g; \
          s|kubernetes-admin@kubernetes|${VKS_NAME}|g; \
          s|kubernetes|${VKS_NAME}|g" \
          ${VKS_HOME}/admin.conf > ${VKS_HOME}/admin.kubeconfig 
@@ -227,35 +253,6 @@ create_kubeconfig_secret() {
 
 apply_cm_manifests() {
     kubectl apply -n ${VKS_NS} -f ${VKS_HOME}/manifests/kube-controller-manager.yaml
-}
-
-create_bootstrap_token() {
-kubectl get secrets --kubeconfig=${VKS_HOME}/admin.conf -n kube-system | grep bootstrap-token &>/dev/null
-if [ "$?" -eq 0 ]; then
-    echo "Bootstrap token found, skipping generation"
-    return
-fi
-echo "Generating new boostrap token"
-TOKEN_ID=$(openssl rand -hex 3)
-TOKEN_SECRET=$(openssl rand -hex 8)
-TOKEN=$TOKEN_ID.$TOKEN_SECRET
-
-cat <<EOF | kubectl apply --kubeconfig=${VKS_HOME}/admin.conf -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: bootstrap-token-$TOKEN_ID
-  namespace: kube-system
-type: bootstrap.kubernetes.io/token
-stringData:
-  description: "The default bootstrap token."
-  token-id: $TOKEN_ID
-  token-secret: $TOKEN_SECRET
-  expiration: 2022-12-05T12:00:00Z
-  usage-bootstrap-authentication: "true"
-  usage-bootstrap-signing: "true"
-  auth-extra-groups: system:bootstrappers:worker,system:bootstrappers:ingress
-EOF
 }
 
 generate_cluster_info() {
@@ -309,8 +306,6 @@ while true; do
   esac
 done
 
-create_certs ${CLUSTER_IP} ${externalIP}
-
 create_vks_ns
 
 create_vksdb_ns
@@ -319,9 +314,17 @@ install_db
 
 DB_PASSWORD=$(get_db_password)
 
-create_or_update_certs_secret
-
 configure_manifests ${DB_PASSWORD}
+
+is_ocp=$(check_is_ocp)
+if [ "$is_ocp"  == "true" ]; then
+  create_ocp_route
+  externalIP=$(get_ocp_route_host)
+fi
+
+create_certs ${CLUSTER_IP} ${externalIP}
+
+create_or_update_certs_secret
 
 apply_manifests
 
@@ -336,7 +339,5 @@ create_cm_secret
 create_kubeconfig_secret ${CLUSTER_IP} ${externalIP}
 
 apply_cm_manifests
-
-create_bootstrap_token
 
 generate_cluster_info ${CLUSTER_IP} ${externalIP}

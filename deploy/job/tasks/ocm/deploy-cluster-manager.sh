@@ -33,6 +33,19 @@ create_joincmd_cm() {
     kubectl create -n ${VKS_NS} configmap join-command --from-file=/tmp/join-cmd
 }
 
+check_is_ocp() {
+  kubectl get routes.route.openshift.io > /dev/null
+  if [ "$?" -eq 0 ]; then
+    echo "true"
+  else
+    echo "false"
+  fi    
+}
+
+get_ocp_route_host() {
+  kubectl get route ${VKS_NAME} -n ${VKS_NS} -o jsonpath='{.spec.host}'
+}
+
 ###########################################################################################
 #                   Main   
 ###########################################################################################
@@ -67,10 +80,18 @@ deploy_cluster_manager
 
 if [ ! -z "$externalIP" ]; then
     echo "External IP $externalIP has been provided, using for join command generation"
-    hubApiserver=https://$externalIP:${KIND_CLUSTER_NODEPORT}
+    SERVER_IP=$externalIP
 else
-    hubApiserver=https://${CLUSTER_IP}:${KIND_CLUSTER_NODEPORT}
+    SERVER_IP=${CLUSTER_IP}
 fi
+
+is_ocp=$(check_is_ocp)
+if [ "$is_ocp" == "true" ]; then
+    SERVER_IP=$(get_ocp_route_host)
+    hubApiserver=https://${SERVER_IP}
+else
+    hubApiserver=https://${SERVER_IP}:${KIND_CLUSTER_NODEPORT}
+fi   
 
 token=$(get_bootstrap_token)
 

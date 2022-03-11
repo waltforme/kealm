@@ -65,9 +65,6 @@ spec:
         - mountPath: /etc/kubernetes/
           name: cm-kubeconfig
       priorityClassName: system-node-critical
-      securityContext:
-        seccompProfile:
-          type: RuntimeDefault
       volumes:
       - name: k8s-certs
         secret: 
