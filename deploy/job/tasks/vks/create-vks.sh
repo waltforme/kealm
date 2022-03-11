@@ -117,7 +117,8 @@ install_db() {
         return
     fi    
     helm repo add bitnami https://charts.bitnami.com/bitnami
-    helm install --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} bitnami/postgresql --version ${POSTGRES_CHART_VERSION} 
+    helm repo update bitnami
+    helm install --namespace ${VKSDB_NS} ${DB_RELEASE_NAME} bitnami/postgresql --version ${POSTGRES_CHART_VERSION} -f ${SCRIPT_DIR}/manifests/postgres-config.yaml
 }
 
 get_db_password() {

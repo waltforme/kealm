@@ -24,7 +24,7 @@ spec:
         - --master=https://{{ .vksName }}:{{ .securePort }}
         - --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf
         - --authorization-kubeconfig=/etc/kubernetes/controller-manager.conf
-        - --bind-address=127.0.0.1
+        - --bind-address=0.0.0.0
         - --client-ca-file=/etc/kubernetes/pki/ca.crt
         - --cluster-name=kubernetes
         - --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
@@ -39,7 +39,6 @@ spec:
         livenessProbe:
           failureThreshold: 8
           httpGet:
-            host: 127.0.0.1
             path: /healthz
             port: 10257
             scheme: HTTPS
@@ -49,10 +48,10 @@ spec:
         resources:
           requests:
             cpu: 200m
+            memory: 64Mi
         startupProbe:
           failureThreshold: 24
           httpGet:
-            host: 127.0.0.1
             path: /healthz
             port: 10257
             scheme: HTTPS

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vks1lb
+  namespace: vks1-system
+  annotations:
+    service.kubernetes.io/ibm-load-balancer-cloud-provider-enable-features: "proxy-protocol"
+    service.kubernetes.io/ibm-load-balancer-cloud-provider-ip-type: "public"
+    #service.kubernetes.io/ibm-load-balancer-cloud-provider-vpc-node-selector: "<key>=<value>"
+    service.kubernetes.io/ibm-load-balancer-cloud-provider-vpc-subnets: "0717-17d9df81-be69-4df7-9377-d2436181ad38"
+    service.kubernetes.io/ibm-load-balancer-cloud-provider-zone: "us-south-1"
+spec:
+ type: LoadBalancer
+ selector:
+    app: kube-apiserver
+ ports:
+   - name: https
+     protocol: TCP
+     port: 7443
