@@ -73,7 +73,7 @@ get_host_ip()
 }
 
 check_is_ocp() {
-  kubectl get routes.route.openshift.io > /dev/null
+  kubectl get routes.route.openshift.io &> /dev/null
   if [ "$?" -eq 0 ]; then
     echo "true"
   else
